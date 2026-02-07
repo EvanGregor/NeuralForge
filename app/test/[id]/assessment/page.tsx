@@ -83,7 +83,9 @@ export default function SequentialAssessmentPage() {
     const [submitted, setSubmitted] = useState(false)
     const [questionStartTime, setQuestionStartTime] = useState<number>(Date.now())
     const [showTabSwitchWarning, setShowTabSwitchWarning] = useState(false)
+    const [showFullscreenWarning, setShowFullscreenWarning] = useState(false)
     const [isFullscreen, setIsFullscreen] = useState(false)
+    const fullscreenExitCountRef = useRef(0)
 
     // Anti-cheat tracking (silent)
     const [antiCheatData, setAntiCheatData] = useState<AntiCheatData>({
@@ -211,7 +213,7 @@ export default function SequentialAssessmentPage() {
         enterFullscreen()
     }, [loading, submitted, job])
 
-    // Monitor fullscreen exit and auto-submit
+    // Monitor fullscreen exit with warning and auto-submit
     useEffect(() => {
         if (submitted) return
 
@@ -224,10 +226,59 @@ export default function SequentialAssessmentPage() {
             )
 
             if (!isCurrentlyFullscreen && isFullscreen && assessmentStartedRef.current) {
-                // Fullscreen was exited, auto-submit
-                console.warn('Fullscreen exited - auto-submitting assessment')
-                if (handleSubmitRef.current) {
-                    handleSubmitRef.current()
+                // Fullscreen was exited
+                fullscreenExitCountRef.current += 1
+                
+                // First exit: show warning and flag
+                if (fullscreenExitCountRef.current === 1) {
+                    console.warn('Fullscreen exited - first warning')
+                    setShowFullscreenWarning(true)
+                    
+                    // Update anti-cheat data to flag this
+                    setAntiCheatData(prev => {
+                        const updated = {
+                            ...prev,
+                            suspicious_patterns: [...prev.suspicious_patterns, 'Fullscreen exit detected']
+                        }
+                        antiCheatRef.current = updated
+                        return updated
+                    })
+                    
+                    // Try to re-enter fullscreen
+                    setTimeout(async () => {
+                        try {
+                            const element = document.documentElement
+                            if (element.requestFullscreen) {
+                                await element.requestFullscreen()
+                            } else if ((element as any).webkitRequestFullscreen) {
+                                await (element as any).webkitRequestFullscreen()
+                            } else if ((element as any).mozRequestFullScreen) {
+                                await (element as any).mozRequestFullScreen()
+                            } else if ((element as any).msRequestFullscreen) {
+                                await (element as any).msRequestFullscreen()
+                            }
+                        } catch (error) {
+                            console.warn('Could not re-enter fullscreen:', error)
+                        }
+                    }, 100)
+                }
+                // Second exit: auto-submit and flag
+                else if (fullscreenExitCountRef.current >= 2) {
+                    console.warn('Fullscreen exited multiple times - auto-submitting assessment')
+                    
+                    // Flag as suspicious
+                    setAntiCheatData(prev => {
+                        const updated = {
+                            ...prev,
+                            suspicious_patterns: [...prev.suspicious_patterns, 'Multiple fullscreen exits detected']
+                        }
+                        antiCheatRef.current = updated
+                        return updated
+                    })
+                    
+                    if (handleSubmitRef.current) {
+                        handleSubmitRef.current()
+                    }
                 }
             }
             setIsFullscreen(isCurrentlyFullscreen)
@@ -338,52 +389,51 @@ export default function SequentialAssessmentPage() {
             return false
         }
 
-        // Block keyboard shortcuts
+        // Block keyboard shortcuts (but allow normal typing)
         const handleKeyDown = (e: KeyboardEvent) => {
-            // Block common shortcuts
-            const blockedKeys = [
-                'F12', // Developer tools
-                'F5', // Refresh
-                'F11', // Fullscreen toggle
-            ]
-
-            const blockedCombos = [
-                { ctrl: true, key: 'c' }, // Copy
-                { ctrl: true, key: 'v' }, // Paste
-                { ctrl: true, key: 'x' }, // Cut
-                { ctrl: true, key: 'a' }, // Select all
-                { ctrl: true, key: 'p' }, // Print
-                { ctrl: true, key: 's' }, // Save
-                { ctrl: true, shift: true, key: 'I' }, // Dev tools
-                { ctrl: true, shift: true, key: 'J' }, // Console
-                { ctrl: true, shift: true, key: 'C' }, // Inspect
-                { ctrl: true, key: 'u' }, // View source
-                { ctrl: true, key: 'shift' }, // Shift combinations
-                { meta: true, key: 'c' }, // Mac copy
-                { meta: true, key: 'v' }, // Mac paste
-                { meta: true, key: 'x' }, // Mac cut
-                { meta: true, key: 'a' }, // Mac select all
-            ]
-
-            // Check for blocked single keys
-            if (blockedKeys.includes(e.key)) {
+            // IMPORTANT: Only block if Ctrl or Cmd (Meta) is pressed
+            // If neither is pressed, allow all keys (normal typing)
+            const isModifierPressed = e.ctrlKey || e.metaKey
+            
+            // Block function keys regardless of modifiers
+            const blockedFunctionKeys = ['F12', 'F5', 'F11']
+            if (blockedFunctionKeys.includes(e.key)) {
                 e.preventDefault()
                 e.stopPropagation()
                 return false
             }
 
-            // Check for blocked key combinations
-            for (const combo of blockedCombos) {
-                const ctrlMatch = (combo.ctrl && (e.ctrlKey || e.metaKey)) || (!combo.ctrl && !e.ctrlKey && !e.metaKey)
-                const shiftMatch = (combo.shift && e.shiftKey) || (!combo.shift && !e.shiftKey)
-                const keyMatch = combo.key.toLowerCase() === e.key.toLowerCase()
+            // If no modifier is pressed, allow everything (normal typing)
+            if (!isModifierPressed) {
+                return true // Allow normal key presses
+            }
 
-                if (ctrlMatch && shiftMatch && keyMatch) {
+            // Only check for blocked shortcuts when Ctrl/Cmd is pressed
+            const keyLower = e.key.toLowerCase()
+            
+            // Block specific Ctrl/Cmd combinations
+            if (isModifierPressed && !e.shiftKey) {
+                // Block Ctrl/Cmd + key (without Shift)
+                const blockedKeys = ['c', 'v', 'x', 'a', 'p', 's', 'u']
+                if (blockedKeys.includes(keyLower)) {
                     e.preventDefault()
                     e.stopPropagation()
                     return false
                 }
             }
+
+            // Block Ctrl/Cmd + Shift combinations for dev tools
+            if (isModifierPressed && e.shiftKey) {
+                const blockedShiftKeys = ['i', 'j', 'c']
+                if (blockedShiftKeys.includes(keyLower)) {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    return false
+                }
+            }
+
+            // Allow all other combinations (including Ctrl+Shift+letter for special characters)
+            return true
         }
 
         // Block text selection (optional - can be too restrictive)
@@ -692,6 +742,43 @@ export default function SequentialAssessmentPage() {
                             className="w-full bg-white text-black hover:bg-white/90"
                         >
                             I Understand
+                        </Button>
+                    </div>
+                </div>
+            )}
+
+            {/* Fullscreen Exit Warning Modal */}
+            {showFullscreenWarning && (
+                <div className="fixed inset-0 bg-black/70 z-[9999] flex items-center justify-center">
+                    <div className="bg-[#1a1a1a] border border-white/20 rounded-xl p-6 max-w-md mx-4">
+                        <div className="flex items-center gap-3 mb-4">
+                            <AlertCircle className="w-8 h-8 text-amber-500" />
+                            <h3 className="text-xl font-bold text-white">Warning: Fullscreen Exit Detected</h3>
+                        </div>
+                        <p className="text-white/70 mb-4">
+                            Exiting fullscreen mode during the assessment is not allowed. This is your first warning.
+                            <strong className="block mt-2 text-red-400">
+                                If you exit fullscreen again, your assessment will be automatically submitted and flagged.
+                            </strong>
+                        </p>
+                        <Button
+                            onClick={() => {
+                                setShowFullscreenWarning(false)
+                                // Try to re-enter fullscreen
+                                const element = document.documentElement
+                                if (element.requestFullscreen) {
+                                    element.requestFullscreen().catch(() => {})
+                                } else if ((element as any).webkitRequestFullscreen) {
+                                    (element as any).webkitRequestFullscreen()
+                                } else if ((element as any).mozRequestFullScreen) {
+                                    (element as any).mozRequestFullScreen()
+                                } else if ((element as any).msRequestFullscreen) {
+                                    (element as any).msRequestFullscreen()
+                                }
+                            }}
+                            className="w-full bg-white text-black hover:bg-white/90"
+                        >
+                            I Understand - Return to Fullscreen
                         </Button>
                     </div>
                 </div>

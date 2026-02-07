@@ -65,15 +65,17 @@ export default function AnalyticsPage() {
         }
     }
 
-    // Get unique assessments
+    // Get unique assessments - use both assessmentId and jobId to handle cases where they differ
     const assessments = useMemo(() => {
         const unique = new Map<string, { id: string; title: string; company: string }>()
         submissions.forEach(s => {
-            if (!unique.has(s.assessmentId)) {
-                unique.set(s.assessmentId, {
-                    id: s.assessmentId,
-                    title: s.jobTitle,
-                    company: s.company
+            // Use assessmentId as primary key, but also include jobId if different
+            const key = s.assessmentId || s.jobId
+            if (key && !unique.has(key)) {
+                unique.set(key, {
+                    id: key,
+                    title: s.jobTitle || 'Untitled Assessment',
+                    company: s.company || 'Unknown Company'
                 })
             }
         })
@@ -84,9 +86,12 @@ export default function AnalyticsPage() {
     const filteredSubmissions = useMemo(() => {
         let filtered = [...submissions]
 
-        // Assessment filter
+        // Assessment filter - check both assessmentId and jobId since sometimes assessmentId might be jobId
         if (assessmentFilter !== 'all') {
-            filtered = filtered.filter(s => s.assessmentId === assessmentFilter)
+            filtered = filtered.filter(s => 
+                s.assessmentId === assessmentFilter || 
+                s.jobId === assessmentFilter
+            )
         }
 
         // Date range filter
@@ -94,7 +99,10 @@ export default function AnalyticsPage() {
             const now = new Date()
             const daysAgo = dateRange === '7d' ? 7 : dateRange === '30d' ? 30 : 90
             const cutoffDate = new Date(now.getTime() - daysAgo * 24 * 60 * 60 * 1000)
-            filtered = filtered.filter(s => new Date(s.submittedAt) >= cutoffDate)
+            filtered = filtered.filter(s => {
+                const submittedDate = new Date(s.submittedAt)
+                return submittedDate >= cutoffDate
+            })
         }
 
         return filtered

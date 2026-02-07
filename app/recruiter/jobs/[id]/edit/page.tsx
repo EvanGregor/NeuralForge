@@ -314,22 +314,22 @@ export default function EditJobPage() {
                 </Card>
 
                 {/* Configuration */}
-                <Card>
+                <Card className="bg-white/5 border-white/10">
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <Settings className="w-5 h-5 text-primary" />
+                        <CardTitle className="flex items-center gap-2 text-white">
+                            <Settings className="w-5 h-5 text-blue-400" />
                             Assessment Configuration
                         </CardTitle>
-                        <CardDescription>
+                        <CardDescription className="text-white/50">
                             Adjust the difficulty and structure of the assessment
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-8">
                         <div className="grid md:grid-cols-3 gap-4">
-                            <div className="p-4 rounded-xl border bg-muted/30">
-                                <div className="flex items-center gap-2 mb-2 text-blue-500">
+                            <div className="p-4 rounded-xl border border-white/10 bg-white/5">
+                                <div className="flex items-center gap-2 mb-2 text-blue-400">
                                     <FileText className="w-4 h-4" />
-                                    <span className="font-semibold text-sm">MCQs</span>
+                                    <span className="font-semibold text-sm text-white">MCQs</span>
                                 </div>
                                 <Input
                                     type="number"
@@ -338,10 +338,10 @@ export default function EditJobPage() {
                                     className="text-white text-center font-bold text-xl h-12 bg-white/5 border-white/10"
                                 />
                             </div>
-                            <div className="p-4 rounded-xl border bg-muted/30">
-                                <div className="flex items-center gap-2 mb-2 text-amber-500">
+                            <div className="p-4 rounded-xl border border-white/10 bg-white/5">
+                                <div className="flex items-center gap-2 mb-2 text-amber-400">
                                     <MessageSquare className="w-4 h-4" />
-                                    <span className="font-semibold text-sm">Subjective</span>
+                                    <span className="font-semibold text-sm text-white">Subjective</span>
                                 </div>
                                 <Input
                                     type="number"
@@ -350,10 +350,10 @@ export default function EditJobPage() {
                                     className="text-white text-center font-bold text-xl h-12 bg-white/5 border-white/10"
                                 />
                             </div>
-                            <div className="p-4 rounded-xl border bg-muted/30">
-                                <div className="flex items-center gap-2 mb-2 text-emerald-500">
+                            <div className="p-4 rounded-xl border border-white/10 bg-white/5">
+                                <div className="flex items-center gap-2 mb-2 text-emerald-400">
                                     <Code className="w-4 h-4" />
-                                    <span className="font-semibold text-sm">Coding</span>
+                                    <span className="font-semibold text-sm text-white">Coding</span>
                                 </div>
                                 <Input
                                     type="number"
@@ -366,8 +366,8 @@ export default function EditJobPage() {
 
                         <div className="space-y-4">
                             <div className="flex justify-between">
-                                <Label>Duration</Label>
-                                <span className="text-primary font-bold">{config.duration_minutes} min</span>
+                                <Label className="text-white/70">Duration</Label>
+                                <span className="text-blue-400 font-bold">{config.duration_minutes} min</span>
                             </div>
                             <Slider
                                 value={[config.duration_minutes]}
@@ -383,24 +383,24 @@ export default function EditJobPage() {
 
                 {/* Skills Visualzation */}
                 {parsedJD && (
-                    <Card>
+                    <Card className="bg-white/5 border-white/10">
                         <CardHeader>
-                            <CardTitle className="text-base font-medium">Target Skills</CardTitle>
+                            <CardTitle className="text-base font-medium text-white">Target Skills</CardTitle>
                         </CardHeader>
                         <CardContent>
                             <div className="flex flex-wrap gap-2">
                                 {parsedJD.skills.technical.map((skill, i) => (
-                                    <Badge key={`tech-${i}`} variant="secondary" className="bg-blue-100 text-blue-700 hover:bg-blue-200">
+                                    <Badge key={`tech-${i}`} variant="secondary" className="bg-blue-500/20 text-blue-400 border-blue-500/30 hover:bg-blue-500/30">
                                         {skill}
                                     </Badge>
                                 ))}
                                 {parsedJD.skills.tools.map((tool, i) => (
-                                    <Badge key={`tool-${i}`} variant="secondary" className="bg-emerald-100 text-emerald-700 hover:bg-emerald-200">
+                                    <Badge key={`tool-${i}`} variant="secondary" className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/30">
                                         {tool}
                                     </Badge>
                                 ))}
                                 {parsedJD.skills.soft.map((skill, i) => (
-                                    <Badge key={`soft-${i}`} variant="secondary" className="bg-purple-100 text-purple-700 hover:bg-purple-200">
+                                    <Badge key={`soft-${i}`} variant="secondary" className="bg-purple-500/20 text-purple-400 border-purple-500/30 hover:bg-purple-500/30">
                                         {skill}
                                     </Badge>
                                 ))}

@@ -422,7 +422,7 @@ export default function CandidateReportPage() {
             </div>
 
             {/* Candidate Header Card */}
-            <Card className="bg-white border border-gray-200 shadow-sm">
+            <Card className="bg-white/5 border-white/10">
                 <CardContent className="p-8">
                     <div className="flex flex-col md:flex-row items-start justify-between gap-6">
                         <div className="flex items-center gap-6">
@@ -430,13 +430,13 @@ export default function CandidateReportPage() {
                                 {report.name.charAt(0).toUpperCase()}
                             </div>
                             <div>
-                                <h1 className="text-3xl font-bold text-gray-900 mb-2">{report.name}</h1>
+                                <h1 className="text-3xl font-bold text-white mb-2">{report.name}</h1>
                                 <div className="space-y-1">
-                                    <div className="flex items-center gap-2 text-gray-600">
+                                    <div className="flex items-center gap-2 text-white/60">
                                         <Mail className="w-4 h-4" />
                                         <span>{report.email}</span>
                                     </div>
-                                    <div className="flex items-center gap-2 text-gray-600">
+                                    <div className="flex items-center gap-2 text-white/60">
                                         <Briefcase className="w-4 h-4" />
                                         <span>{report.jobTitle} at {report.company}</span>
                                     </div>
@@ -446,14 +446,14 @@ export default function CandidateReportPage() {
 
                         <div className="flex flex-col items-end gap-2">
                             <div className="flex items-center gap-3">
-                                <span className="text-sm text-gray-500 font-medium uppercase tracking-wider">Overall Score</span>
-                                <div className={`text-5xl font-bold ${report.passed ? 'text-emerald-600' : 'text-red-600'}`}>
+                                <span className="text-sm text-white/50 font-medium uppercase tracking-wider">Overall Score</span>
+                                <div className={`text-5xl font-bold ${report.passed ? 'text-emerald-400' : 'text-red-400'}`}>
                                     {report.percentage}%
                                 </div>
                             </div>
                             <Badge className={`px-3 py-1 text-sm ${report.passed
-                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                : 'bg-red-50 text-red-700 border-red-200'
+                                ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                                : 'bg-red-500/20 text-red-400 border-red-500/30'
                                 }`}>
                                 {report.passed ? <CheckCircle className="w-4 h-4 mr-1.5" /> : <XCircle className="w-4 h-4 mr-1.5" />}
                                 {report.passed ? 'Qualified' : 'Not Qualified'}
@@ -461,33 +461,33 @@ export default function CandidateReportPage() {
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-8 pt-6 border-t border-gray-200">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-8 pt-6 border-t border-white/10">
                         <div>
-                            <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Time Taken</p>
-                            <div className="flex items-center gap-2 text-gray-900 font-semibold">
-                                <Clock className="w-4 h-4 text-blue-600" />
+                            <p className="text-xs text-white/50 uppercase tracking-wide mb-1">Time Taken</p>
+                            <div className="flex items-center gap-2 text-white font-semibold">
+                                <Clock className="w-4 h-4 text-blue-400" />
                                 {report.timeSpent} mins
                             </div>
                         </div>
                         <div>
-                            <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Anti-Cheat Flags</p>
-                            <div className="flex items-center gap-2 text-gray-900 font-semibold">
-                                <Shield className="w-4 h-4 text-amber-600" />
+                            <p className="text-xs text-white/50 uppercase tracking-wide mb-1">Anti-Cheat Flags</p>
+                            <div className="flex items-center gap-2 text-white font-semibold">
+                                <Shield className="w-4 h-4 text-amber-400" />
                                 {report.tabSwitches + report.pasteCount} warnings
                             </div>
                         </div>
                         <div>
-                            <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Submitted On</p>
-                            <div className="text-gray-700 font-medium">
+                            <p className="text-xs text-white/50 uppercase tracking-wide mb-1">Submitted On</p>
+                            <div className="text-white/70 font-medium">
                                 {new Date(report.submittedAt).toLocaleDateString()}
                             </div>
                         </div>
                         <div>
-                            <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Status</p>
-                            <Badge className={`px-2 py-1 text-xs ${report.status === 'shortlisted' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
-                                    report.status === 'rejected' ? 'bg-red-50 text-red-700 border-red-200' :
-                                        report.status === 'evaluated' ? 'bg-blue-50 text-blue-700 border-blue-200' :
-                                            'bg-amber-50 text-amber-700 border-amber-200'
+                            <p className="text-xs text-white/50 uppercase tracking-wide mb-1">Status</p>
+                            <Badge className={`px-2 py-1 text-xs ${report.status === 'shortlisted' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' :
+                                    report.status === 'rejected' ? 'bg-red-500/20 text-red-400 border-red-500/30' :
+                                        report.status === 'evaluated' ? 'bg-blue-500/20 text-blue-400 border-blue-500/30' :
+                                            'bg-amber-500/20 text-amber-400 border-amber-500/30'
                                 }`}>
                                 {report.status}
                             </Badge>
@@ -499,21 +499,21 @@ export default function CandidateReportPage() {
             <div className="grid md:grid-cols-3 gap-6">
                 {/* Section Scores Breakdown */}
                 <div className="space-y-6">
-                    <h3 className="text-lg font-semibold text-gray-900 px-2">Performance Breakdown</h3>
+                    <h3 className="text-lg font-semibold text-white px-2">Performance Breakdown</h3>
 
-                    <Card className="bg-white border border-gray-200 hover:shadow-md transition-shadow">
+                    <Card className="bg-white/5 border-white/10 hover:bg-white/10 transition-colors">
                         <CardContent className="p-5">
                             <div className="flex items-center justify-between mb-4">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center">
-                                        <FileText className="w-5 h-5 text-blue-600" />
+                                    <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center">
+                                        <FileText className="w-5 h-5 text-blue-400" />
                                     </div>
                                     <div>
-                                        <p className="font-semibold text-gray-900">MCQs</p>
-                                        <p className="text-xs text-gray-500">Multiple Choice</p>
+                                        <p className="font-semibold text-white">MCQs</p>
+                                        <p className="text-xs text-white/50">Multiple Choice</p>
                                     </div>
                                 </div>
-                                <span className="text-xl font-bold text-blue-600">
+                                <span className="text-xl font-bold text-blue-400">
                                     {report.sections.mcq.total > 0 ? Math.round((report.sections.mcq.score / report.sections.mcq.total) * 100) : 0}%
                                 </span>
                             </div>
@@ -521,19 +521,19 @@ export default function CandidateReportPage() {
                         </CardContent>
                     </Card>
 
-                    <Card className="bg-white border border-gray-200 hover:shadow-md transition-shadow">
+                    <Card className="bg-white/5 border-white/10 hover:bg-white/10 transition-colors">
                         <CardContent className="p-5">
                             <div className="flex items-center justify-between mb-4">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center">
-                                        <MessageSquare className="w-5 h-5 text-amber-600" />
+                                    <div className="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center">
+                                        <MessageSquare className="w-5 h-5 text-amber-400" />
                                     </div>
                                     <div>
-                                        <p className="font-semibold text-gray-900">Subjective</p>
-                                        <p className="text-xs text-gray-500">Written Responses</p>
+                                        <p className="font-semibold text-white">Subjective</p>
+                                        <p className="text-xs text-white/50">Written Responses</p>
                                     </div>
                                 </div>
-                                <span className="text-xl font-bold text-amber-600">
+                                <span className="text-xl font-bold text-amber-400">
                                     {report.sections.subjective.total > 0 ? Math.round((report.sections.subjective.score / report.sections.subjective.total) * 100) : 0}%
                                 </span>
                             </div>
@@ -541,19 +541,19 @@ export default function CandidateReportPage() {
                         </CardContent>
                     </Card>
 
-                    <Card className="bg-white border border-gray-200 hover:shadow-md transition-shadow">
+                    <Card className="bg-white/5 border-white/10 hover:bg-white/10 transition-colors">
                         <CardContent className="p-5">
                             <div className="flex items-center justify-between mb-4">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center">
-                                        <Code className="w-5 h-5 text-emerald-600" />
+                                    <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center">
+                                        <Code className="w-5 h-5 text-emerald-400" />
                                     </div>
                                     <div>
-                                        <p className="font-semibold text-gray-900">Coding</p>
-                                        <p className="text-xs text-gray-500">Programming Problems</p>
+                                        <p className="font-semibold text-white">Coding</p>
+                                        <p className="text-xs text-white/50">Programming Problems</p>
                                     </div>
                                 </div>
-                                <span className="text-xl font-bold text-emerald-600">
+                                <span className="text-xl font-bold text-emerald-400">
                                     {report.sections.coding.total > 0 ? Math.round((report.sections.coding.score / report.sections.coding.total) * 100) : 0}%
                                 </span>
                             </div>
@@ -563,13 +563,13 @@ export default function CandidateReportPage() {
                 </div>
 
                 <div className="md:col-span-2 space-y-6">
-                    <h3 className="text-lg font-semibold text-gray-900 px-2">Detailed Analysis</h3>
+                    <h3 className="text-lg font-semibold text-white px-2">Detailed Analysis</h3>
 
                     {/* Skill Performance */}
-                    <Card className="bg-white border border-gray-200">
+                    <Card className="bg-white/5 border-white/10">
                         <CardHeader>
-                            <CardTitle className="text-gray-900 flex items-center gap-2">
-                                <TrendingUp className="w-5 h-5 text-primary" />
+                            <CardTitle className="text-white flex items-center gap-2">
+                                <TrendingUp className="w-5 h-5 text-blue-400" />
                                 Skill Proficiency
                             </CardTitle>
                         </CardHeader>
@@ -578,9 +578,9 @@ export default function CandidateReportPage() {
                                 report.skillScores.map((skill, idx) => (
                                     <div key={idx}>
                                         <div className="flex justify-between mb-2">
-                                            <span className="text-gray-700 font-medium">{skill.skill}</span>
-                                            <span className={`font-bold ${skill.percentage >= 70 ? 'text-emerald-600' :
-                                                skill.percentage >= 50 ? 'text-amber-600' : 'text-red-600'
+                                            <span className="text-white/70 font-medium">{skill.skill}</span>
+                                            <span className={`font-bold ${skill.percentage >= 70 ? 'text-emerald-400' :
+                                                skill.percentage >= 50 ? 'text-amber-400' : 'text-red-400'
                                                 }`}>
                                                 {skill.percentage}%
                                             </span>
@@ -589,7 +589,7 @@ export default function CandidateReportPage() {
                                     </div>
                                 ))
                             ) : (
-                                <p className="text-gray-500 text-sm">No skill scores available</p>
+                                <p className="text-white/50 text-sm">No skill scores available</p>
                             )}
                         </CardContent>
                     </Card>
@@ -599,44 +599,44 @@ export default function CandidateReportPage() {
                         try {
                             const benchmark = getBenchmarkComparison(submission, submission.assessmentId)
                             return (
-                                <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200 mb-6">
+                                <Card className="bg-gradient-to-br from-blue-500/10 to-indigo-500/10 border-blue-500/30 mb-6">
                                     <CardHeader>
-                                        <CardTitle className="flex items-center gap-2">
-                                            <TrendingUp className="w-5 h-5 text-blue-600" />
+                                        <CardTitle className="flex items-center gap-2 text-white">
+                                            <TrendingUp className="w-5 h-5 text-blue-400" />
                                             Benchmark Comparison
                                         </CardTitle>
                                     </CardHeader>
                                     <CardContent className="space-y-4">
                                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                            <div className="text-center p-3 bg-white rounded-lg">
-                                                <div className="text-xs text-gray-500 mb-1">Your Score</div>
-                                                <div className="text-2xl font-bold text-gray-900">{benchmark.candidatePercentage}%</div>
+                                            <div className="text-center p-3 bg-white/5 rounded-lg border border-white/10">
+                                                <div className="text-xs text-white/50 mb-1">Your Score</div>
+                                                <div className="text-2xl font-bold text-white">{benchmark.candidatePercentage}%</div>
                                             </div>
-                                            <div className="text-center p-3 bg-white rounded-lg">
-                                                <div className="text-xs text-gray-500 mb-1">Average</div>
-                                                <div className="text-2xl font-bold text-blue-600">{benchmark.benchmarkStats.average}%</div>
+                                            <div className="text-center p-3 bg-white/5 rounded-lg border border-white/10">
+                                                <div className="text-xs text-white/50 mb-1">Average</div>
+                                                <div className="text-2xl font-bold text-blue-400">{benchmark.benchmarkStats.average}%</div>
                                             </div>
-                                            <div className="text-center p-3 bg-white rounded-lg">
-                                                <div className="text-xs text-gray-500 mb-1">Top 10%</div>
-                                                <div className="text-2xl font-bold text-emerald-600">{benchmark.benchmarkStats.top10Percent}%</div>
+                                            <div className="text-center p-3 bg-white/5 rounded-lg border border-white/10">
+                                                <div className="text-xs text-white/50 mb-1">Top 10%</div>
+                                                <div className="text-2xl font-bold text-emerald-400">{benchmark.benchmarkStats.top10Percent}%</div>
                                             </div>
-                                            <div className="text-center p-3 bg-white rounded-lg">
-                                                <div className="text-xs text-gray-500 mb-1">Percentile</div>
-                                                <div className="text-2xl font-bold text-purple-600">{benchmark.benchmarkStats.percentile}th</div>
+                                            <div className="text-center p-3 bg-white/5 rounded-lg border border-white/10">
+                                                <div className="text-xs text-white/50 mb-1">Percentile</div>
+                                                <div className="text-2xl font-bold text-purple-400">{benchmark.benchmarkStats.percentile}th</div>
                                             </div>
                                         </div>
                                         <div className="mt-4">
-                                            <div className="text-sm font-semibold text-gray-700 mb-2">Status:
-                                                <span className={`ml-2 ${benchmark.overallStatus === 'top_performer' ? 'text-emerald-600' :
-                                                        benchmark.overallStatus === 'above_average' ? 'text-blue-600' :
-                                                            benchmark.overallStatus === 'average' ? 'text-amber-600' :
-                                                                'text-red-600'
+                                            <div className="text-sm font-semibold text-white/70 mb-2">Status:
+                                                <span className={`ml-2 ${benchmark.overallStatus === 'top_performer' ? 'text-emerald-400' :
+                                                        benchmark.overallStatus === 'above_average' ? 'text-blue-400' :
+                                                            benchmark.overallStatus === 'average' ? 'text-amber-400' :
+                                                                'text-red-400'
                                                     }`}>
                                                     {benchmark.overallStatus.replace('_', ' ').toUpperCase()}
                                                 </span>
                                             </div>
                                             {benchmark.recommendations.length > 0 && (
-                                                <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
+                                                <ul className="list-disc list-inside text-sm text-white/60 space-y-1">
                                                     {benchmark.recommendations.map((rec, idx) => (
                                                         <li key={idx}>{rec}</li>
                                                     ))}
@@ -653,31 +653,31 @@ export default function CandidateReportPage() {
 
                     {/* Plagiarism & Bot Detection Warnings */}
                     {(submission?.plagiarismData?.flagged || submission?.botDetectionData?.isBot) && (
-                        <Card className="bg-red-50 border-red-200 mb-6">
+                        <Card className="bg-red-500/10 border-red-500/30 mb-6">
                             <CardHeader>
-                                <CardTitle className="flex items-center gap-2 text-red-700">
+                                <CardTitle className="flex items-center gap-2 text-red-400">
                                     <AlertTriangle className="w-5 h-5" />
                                     Security Flags
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-3">
                                 {submission.plagiarismData?.flagged && (
-                                    <div className="p-3 bg-white rounded border border-red-200">
-                                        <div className="font-semibold text-red-700 mb-1">⚠️ Plagiarism Detected</div>
-                                        <div className="text-sm text-red-600">
+                                    <div className="p-3 bg-white/5 rounded border border-red-500/30">
+                                        <div className="font-semibold text-red-400 mb-1">⚠️ Plagiarism Detected</div>
+                                        <div className="text-sm text-red-300">
                                             Similar content found in other submissions. Review candidate answers carefully.
                                         </div>
                                     </div>
                                 )}
                                 {submission.botDetectionData?.isBot && (
-                                    <div className="p-3 bg-white rounded border border-red-200">
-                                        <div className="font-semibold text-red-700 mb-1">🤖 Bot Activity Detected</div>
-                                        <div className="text-sm text-red-600 mb-2">
+                                    <div className="p-3 bg-white/5 rounded border border-red-500/30">
+                                        <div className="font-semibold text-red-400 mb-1">🤖 Bot Activity Detected</div>
+                                        <div className="text-sm text-red-300 mb-2">
                                             Risk Score: {submission.botDetectionData.riskScore}% |
                                             Confidence: {submission.botDetectionData.confidence}%
                                         </div>
                                         {submission.botDetectionData.flags && submission.botDetectionData.flags.length > 0 && (
-                                            <ul className="text-xs text-red-600 list-disc list-inside">
+                                            <ul className="text-xs text-red-300 list-disc list-inside">
                                                 {submission.botDetectionData.flags.slice(0, 3).map((flag: any, idx: number) => (
                                                     <li key={idx}>{flag.description}</li>
                                                 ))}
@@ -692,26 +692,26 @@ export default function CandidateReportPage() {
                     <div className="grid md:grid-cols-2 gap-6">
                         {/* Mismatches */}
                         {report.skillMismatches.length > 0 && (
-                            <Card className="bg-amber-50 border-amber-200">
+                            <Card className="bg-amber-500/10 border-amber-500/30">
                                 <CardHeader>
-                                    <CardTitle className="text-amber-800 flex items-center gap-2 text-base">
+                                    <CardTitle className="text-amber-400 flex items-center gap-2 text-base">
                                         <AlertTriangle className="w-5 h-5" />
                                         Resume Gap Analysis
                                     </CardTitle>
                                 </CardHeader>
                                 <CardContent className="space-y-4">
                                     {report.skillMismatches.map((mismatch, idx) => (
-                                        <div key={idx} className="bg-white rounded-lg p-4 border border-amber-200">
+                                        <div key={idx} className="bg-white/5 rounded-lg p-4 border border-amber-500/30">
                                             <div className="flex items-center gap-2 mb-2">
-                                                <Badge variant="secondary" className="bg-amber-100 text-amber-800 border-amber-300">
+                                                <Badge variant="secondary" className="bg-amber-500/20 text-amber-400 border-amber-500/30">
                                                     {mismatch.skill}
                                                 </Badge>
                                             </div>
-                                            <div className="text-xs text-gray-600 grid grid-cols-2 gap-2 mb-2">
-                                                <span>Claimed: <span className="text-gray-900 font-medium">{mismatch.claimed}</span></span>
-                                                <span>Actual: <span className="text-gray-900 font-medium">{mismatch.actual}</span></span>
+                                            <div className="text-xs text-white/60 grid grid-cols-2 gap-2 mb-2">
+                                                <span>Claimed: <span className="text-white font-medium">{mismatch.claimed}</span></span>
+                                                <span>Actual: <span className="text-white font-medium">{mismatch.actual}</span></span>
                                             </div>
-                                            <p className="text-sm text-amber-800 leading-relaxed">"{mismatch.warning}"</p>
+                                            <p className="text-sm text-amber-300 leading-relaxed">"{mismatch.warning}"</p>
                                         </div>
                                     ))}
                                 </CardContent>
@@ -719,17 +719,17 @@ export default function CandidateReportPage() {
                         )}
 
                         {/* AI Insights */}
-                        <Card className="bg-blue-50 border-blue-200">
+                        <Card className="bg-blue-500/10 border-blue-500/30">
                             <CardHeader>
-                                <CardTitle className="text-blue-800 flex items-center gap-2 text-base">
+                                <CardTitle className="text-blue-400 flex items-center gap-2 text-base">
                                     <Brain className="w-5 h-5" />
                                     AI Observations
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 {report.aiInsights.map((insight, idx) => (
-                                    <div key={idx} className="flex gap-3 text-sm text-gray-700 leading-relaxed bg-white p-3 rounded-lg border border-blue-200">
-                                        <SparklesIcon className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+                                    <div key={idx} className="flex gap-3 text-sm text-white/70 leading-relaxed bg-white/5 p-3 rounded-lg border border-blue-500/30">
+                                        <SparklesIcon className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
                                         <span>{insight}</span>
                                     </div>
                                 ))}
@@ -741,13 +741,13 @@ export default function CandidateReportPage() {
 
             {/* Resume Information Section */}
             {fullResumeData && (
-                <Card className="bg-white border border-gray-200">
+                <Card className="bg-white/5 border-white/10">
                     <CardHeader>
-                        <CardTitle className="text-gray-900 flex items-center gap-2">
-                            <FileText className="w-5 h-5 text-primary" />
+                        <CardTitle className="text-white flex items-center gap-2">
+                            <FileText className="w-5 h-5 text-blue-400" />
                             Candidate Resume Information
                         </CardTitle>
-                        <CardDescription>
+                        <CardDescription className="text-white/50">
                             Resume data extracted and confirmed by candidate
                         </CardDescription>
                     </CardHeader>
@@ -755,10 +755,10 @@ export default function CandidateReportPage() {
                         {/* Skills */}
                         {fullResumeData.skills && fullResumeData.skills.length > 0 && (
                             <div>
-                                <h4 className="font-semibold text-gray-900 mb-3">Skills</h4>
+                                <h4 className="font-semibold text-white mb-3">Skills</h4>
                                 <div className="flex flex-wrap gap-2">
                                     {fullResumeData.skills.map((skill: string, idx: number) => (
-                                        <Badge key={idx} variant="secondary" className="text-sm">
+                                        <Badge key={idx} variant="secondary" className="text-sm bg-white/10 text-white/70 border-white/20">
                                             {skill}
                                         </Badge>
                                     ))}
@@ -769,15 +769,15 @@ export default function CandidateReportPage() {
                         {/* Experience */}
                         {fullResumeData.experience && fullResumeData.experience.length > 0 && (
                             <div>
-                                <h4 className="font-semibold text-gray-900 mb-3">Work Experience</h4>
+                                <h4 className="font-semibold text-white mb-3">Work Experience</h4>
                                 <div className="space-y-3">
                                     {fullResumeData.experience.map((exp: any, idx: number) => (
-                                        <div key={idx} className="border-l-2 border-primary pl-4 py-2">
-                                            <div className="font-medium text-gray-900">{exp.position || 'Position'}</div>
-                                            <div className="text-sm text-gray-600">{exp.company || 'Company'}</div>
-                                            <div className="text-xs text-gray-500">{exp.duration || 'Duration'}</div>
+                                        <div key={idx} className="border-l-2 border-blue-400 pl-4 py-2">
+                                            <div className="font-medium text-white">{exp.position || 'Position'}</div>
+                                            <div className="text-sm text-white/60">{exp.company || 'Company'}</div>
+                                            <div className="text-xs text-white/50">{exp.duration || 'Duration'}</div>
                                             {exp.description && (
-                                                <div className="text-sm text-gray-700 mt-2">{exp.description}</div>
+                                                <div className="text-sm text-white/70 mt-2">{exp.description}</div>
                                             )}
                                         </div>
                                     ))}
@@ -788,14 +788,14 @@ export default function CandidateReportPage() {
                         {/* Education */}
                         {fullResumeData.education && fullResumeData.education.length > 0 && (
                             <div>
-                                <h4 className="font-semibold text-gray-900 mb-3">Education</h4>
+                                <h4 className="font-semibold text-white mb-3">Education</h4>
                                 <div className="space-y-2">
                                     {fullResumeData.education.map((edu: any, idx: number) => (
                                         <div key={idx} className="text-sm">
-                                            <div className="font-medium text-gray-900">{edu.degree || 'Degree'}</div>
-                                            <div className="text-gray-600">{edu.institution || 'Institution'}</div>
-                                            {edu.field && <div className="text-gray-500">{edu.field}</div>}
-                                            {edu.year && <div className="text-gray-500">{edu.year}</div>}
+                                            <div className="font-medium text-white">{edu.degree || 'Degree'}</div>
+                                            <div className="text-white/60">{edu.institution || 'Institution'}</div>
+                                            {edu.field && <div className="text-white/50">{edu.field}</div>}
+                                            {edu.year && <div className="text-white/50">{edu.year}</div>}
                                         </div>
                                     ))}
                                 </div>
@@ -805,16 +805,16 @@ export default function CandidateReportPage() {
                         {/* Summary */}
                         {fullResumeData.summary && (
                             <div>
-                                <h4 className="font-semibold text-gray-900 mb-3">Professional Summary</h4>
-                                <p className="text-sm text-gray-700 leading-relaxed">{fullResumeData.summary}</p>
+                                <h4 className="font-semibold text-white mb-3">Professional Summary</h4>
+                                <p className="text-sm text-white/70 leading-relaxed">{fullResumeData.summary}</p>
                             </div>
                         )}
 
                         {/* Achievements */}
                         {fullResumeData.achievements && fullResumeData.achievements.length > 0 && (
                             <div>
-                                <h4 className="font-semibold text-gray-900 mb-3">Achievements</h4>
-                                <ul className="list-disc list-inside space-y-1 text-sm text-gray-700">
+                                <h4 className="font-semibold text-white mb-3">Achievements</h4>
+                                <ul className="list-disc list-inside space-y-1 text-sm text-white/70">
                                     {fullResumeData.achievements.map((achievement: string, idx: number) => (
                                         <li key={idx}>{achievement}</li>
                                     ))}
@@ -825,10 +825,10 @@ export default function CandidateReportPage() {
                         {/* Certifications */}
                         {fullResumeData.certifications && fullResumeData.certifications.length > 0 && (
                             <div>
-                                <h4 className="font-semibold text-gray-900 mb-3">Certifications</h4>
+                                <h4 className="font-semibold text-white mb-3">Certifications</h4>
                                 <div className="flex flex-wrap gap-2">
                                     {fullResumeData.certifications.map((cert: string, idx: number) => (
-                                        <Badge key={idx} variant="outline" className="text-sm">
+                                        <Badge key={idx} variant="outline" className="text-sm border-white/20 text-white/70">
                                             {cert}
                                         </Badge>
                                     ))}
@@ -838,10 +838,10 @@ export default function CandidateReportPage() {
 
                         {/* ATS Score */}
                         {fullResumeData.atsScore > 0 && (
-                            <div className="pt-4 border-t border-gray-200">
+                            <div className="pt-4 border-t border-white/10">
                                 <div className="flex items-center justify-between">
-                                    <span className="text-sm font-medium text-gray-700">Resume ATS Score</span>
-                                    <Badge className={fullResumeData.atsScore >= 70 ? 'bg-emerald-100 text-emerald-700' : fullResumeData.atsScore >= 50 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'}>
+                                    <span className="text-sm font-medium text-white/70">Resume ATS Score</span>
+                                    <Badge className={fullResumeData.atsScore >= 70 ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : fullResumeData.atsScore >= 50 ? 'bg-amber-500/20 text-amber-400 border-amber-500/30' : 'bg-red-500/20 text-red-400 border-red-500/30'}>
                                         {fullResumeData.atsScore}/100
                                     </Badge>
                                 </div>
@@ -852,22 +852,23 @@ export default function CandidateReportPage() {
             )}
 
             {/* Actual Answers Section */}
-            <Card className="bg-white border border-gray-200">
+            <Card className="bg-white/5 border-white/10">
                 <CardHeader>
                     <div className="flex items-center justify-between">
-                        <CardTitle className="text-gray-900 flex items-center gap-2">
-                            <FileText className="w-5 h-5 text-primary" />
+                        <CardTitle className="text-white flex items-center gap-2">
+                            <FileText className="w-5 h-5 text-blue-400" />
                             Candidate's Actual Responses
                         </CardTitle>
                         <Button
                             variant="outline"
                             size="sm"
                             onClick={() => setShowAnswers(!showAnswers)}
+                            className="border-white/10 text-white hover:bg-white/10"
                         >
                             {showAnswers ? 'Hide' : 'Show'} Answers
                         </Button>
                     </div>
-                    <CardDescription>
+                    <CardDescription className="text-white/50">
                         View the actual answers submitted by the candidate
                     </CardDescription>
                 </CardHeader>
@@ -876,8 +877,8 @@ export default function CandidateReportPage() {
                         {/* MCQ Answers */}
                         {questions.filter((q: any) => q.type === 'mcq').length > 0 && (
                             <div>
-                                <h4 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                                    <FileText className="w-4 h-4 text-blue-600" />
+                                <h4 className="font-semibold text-white mb-4 flex items-center gap-2">
+                                    <FileText className="w-4 h-4 text-blue-400" />
                                     Multiple Choice Questions
                                 </h4>
                                 <div className="space-y-4">
@@ -891,12 +892,12 @@ export default function CandidateReportPage() {
                                         const correctAnswer = question.content.options[question.content.correct_answer]
 
                                         return (
-                                            <div key={question.id} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                                            <div key={question.id} className="border border-white/10 rounded-lg p-4 bg-white/5">
                                                 <div className="flex items-start justify-between mb-2">
                                                     <div className="flex-1">
                                                         <div className="flex items-center gap-2 mb-2">
-                                                            <span className="font-medium text-gray-900">Q{idx + 1}:</span>
-                                                            <span className="text-gray-700">{question.content.question}</span>
+                                                            <span className="font-medium text-white">Q{idx + 1}:</span>
+                                                            <span className="text-white/70">{question.content.question}</span>
                                                         </div>
                                                         <div className="space-y-2 ml-6">
                                                             {question.content.options.map((option: string, optIdx: number) => (
@@ -904,31 +905,31 @@ export default function CandidateReportPage() {
                                                                     key={optIdx}
                                                                     className={`p-2 rounded ${optIdx === selectedOption
                                                                             ? isCorrect
-                                                                                ? 'bg-emerald-100 border-2 border-emerald-500'
-                                                                                : 'bg-red-100 border-2 border-red-500'
+                                                                                ? 'bg-emerald-500/20 border-2 border-emerald-500'
+                                                                                : 'bg-red-500/20 border-2 border-red-500'
                                                                             : optIdx === question.content.correct_answer
-                                                                                ? 'bg-blue-50 border border-blue-300'
-                                                                                : 'bg-white border border-gray-200'
+                                                                                ? 'bg-blue-500/20 border border-blue-500/50'
+                                                                                : 'bg-white/5 border border-white/10'
                                                                         }`}
                                                                 >
                                                                     <div className="flex items-center gap-2">
                                                                         <span className={`font-medium ${optIdx === selectedOption
-                                                                                ? isCorrect ? 'text-emerald-700' : 'text-red-700'
+                                                                                ? isCorrect ? 'text-emerald-400' : 'text-red-400'
                                                                                 : optIdx === question.content.correct_answer
-                                                                                    ? 'text-blue-700' : 'text-gray-700'
+                                                                                    ? 'text-blue-400' : 'text-white/70'
                                                                             }`}>
                                                                             {String.fromCharCode(65 + optIdx)}.
                                                                         </span>
-                                                                        <span className={optIdx === selectedOption ? 'font-semibold' : ''}>
+                                                                        <span className={optIdx === selectedOption ? 'font-semibold text-white' : 'text-white/70'}>
                                                                             {option}
                                                                         </span>
                                                                         {optIdx === selectedOption && (
-                                                                            <Badge className={isCorrect ? 'bg-emerald-500' : 'bg-red-500'}>
+                                                                            <Badge className={isCorrect ? 'bg-emerald-500/30 text-emerald-400 border-emerald-500/50' : 'bg-red-500/30 text-red-400 border-red-500/50'}>
                                                                                 Candidate's Answer
                                                                             </Badge>
                                                                         )}
                                                                         {optIdx === question.content.correct_answer && optIdx !== selectedOption && (
-                                                                            <Badge className="bg-blue-500">Correct Answer</Badge>
+                                                                            <Badge className="bg-blue-500/30 text-blue-400 border-blue-500/50">Correct Answer</Badge>
                                                                         )}
                                                                     </div>
                                                                 </div>
@@ -937,22 +938,22 @@ export default function CandidateReportPage() {
                                                     </div>
                                                     <div className="ml-4">
                                                         {isCorrect ? (
-                                                            <Badge className="bg-emerald-100 text-emerald-700 border-emerald-300">
+                                                            <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30">
                                                                 <CheckCircle className="w-3 h-3 mr-1" />
                                                                 Correct
                                                             </Badge>
                                                         ) : (
-                                                            <Badge className="bg-red-100 text-red-700 border-red-300">
+                                                            <Badge className="bg-red-500/20 text-red-400 border-red-500/30">
                                                                 <XCircle className="w-3 h-3 mr-1" />
                                                                 Incorrect
                                                             </Badge>
                                                         )}
                                                     </div>
                                                 </div>
-                                                <div className="mt-3 text-sm text-gray-600 ml-6">
-                                                    <p><strong>Candidate selected:</strong> {candidateAnswer}</p>
+                                                <div className="mt-3 text-sm text-white/60 ml-6">
+                                                    <p><strong className="text-white/70">Candidate selected:</strong> {candidateAnswer}</p>
                                                     {!isCorrect && (
-                                                        <p><strong>Correct answer:</strong> {correctAnswer}</p>
+                                                        <p><strong className="text-white/70">Correct answer:</strong> {correctAnswer}</p>
                                                     )}
                                                 </div>
                                             </div>
@@ -965,8 +966,8 @@ export default function CandidateReportPage() {
                         {/* Subjective Answers */}
                         {questions.filter((q: any) => q.type === 'subjective').length > 0 && (
                             <div>
-                                <h4 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                                    <MessageSquare className="w-4 h-4 text-amber-600" />
+                                <h4 className="font-semibold text-white mb-4 flex items-center gap-2">
+                                    <MessageSquare className="w-4 h-4 text-amber-400" />
                                     Subjective Questions
                                 </h4>
                                 <div className="space-y-4">
@@ -975,13 +976,13 @@ export default function CandidateReportPage() {
                                         const answerText = answer?.response?.text || 'Not answered'
 
                                         return (
-                                            <div key={question.id} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                                            <div key={question.id} className="border border-white/10 rounded-lg p-4 bg-white/5">
                                                 <div className="mb-2">
-                                                    <span className="font-medium text-gray-900">Q{idx + 1}:</span>
-                                                    <span className="text-gray-700 ml-2">{question.content.question}</span>
+                                                    <span className="font-medium text-white">Q{idx + 1}:</span>
+                                                    <span className="text-white/70 ml-2">{question.content.question}</span>
                                                 </div>
-                                                <div className="mt-3 p-3 bg-white rounded border border-gray-200">
-                                                    <p className="text-gray-700 whitespace-pre-wrap">{answerText}</p>
+                                                <div className="mt-3 p-3 bg-white/5 rounded border border-white/10">
+                                                    <p className="text-white/70 whitespace-pre-wrap">{answerText}</p>
                                                 </div>
                                             </div>
                                         )
@@ -993,8 +994,8 @@ export default function CandidateReportPage() {
                         {/* Coding Answers */}
                         {questions.filter((q: any) => q.type === 'coding').length > 0 && (
                             <div>
-                                <h4 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                                    <Code className="w-4 h-4 text-emerald-600" />
+                                <h4 className="font-semibold text-white mb-4 flex items-center gap-2">
+                                    <Code className="w-4 h-4 text-emerald-400" />
                                     Coding Questions
                                 </h4>
                                 <div className="space-y-4">
@@ -1004,14 +1005,14 @@ export default function CandidateReportPage() {
                                         const language = answer?.response?.language || 'unknown'
 
                                         return (
-                                            <div key={question.id} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                                            <div key={question.id} className="border border-white/10 rounded-lg p-4 bg-white/5">
                                                 <div className="mb-2">
-                                                    <span className="font-medium text-gray-900">Q{idx + 1}:</span>
-                                                    <span className="text-gray-700 ml-2">{question.content.problem_statement}</span>
+                                                    <span className="font-medium text-white">Q{idx + 1}:</span>
+                                                    <span className="text-white/70 ml-2">{question.content.problem_statement}</span>
                                                 </div>
                                                 <div className="mt-3">
                                                     <div className="flex items-center justify-between mb-2">
-                                                        <span className="text-sm text-gray-600">Language: {language}</span>
+                                                        <span className="text-sm text-white/60">Language: {language}</span>
                                                     </div>
                                                     <pre className="p-4 bg-gray-900 text-gray-100 rounded-lg overflow-x-auto text-sm">
                                                         <code>{code}</code>

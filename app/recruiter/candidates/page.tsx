@@ -129,7 +129,10 @@ export default function CandidatesPage() {
         }
 
         if (assessmentFilter !== 'all') {
-            filtered = filtered.filter(s => s.assessmentId === assessmentFilter)
+            filtered = filtered.filter(s => 
+                s.assessmentId === assessmentFilter || 
+                s.jobId === assessmentFilter
+            )
         }
 
         filtered.sort((a, b) => {

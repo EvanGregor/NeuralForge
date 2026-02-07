@@ -301,15 +301,15 @@ export default function RecruiterDashboard() {
                             )}
                         </div>
                         <Select value={statusFilter} onValueChange={setStatusFilter}>
-                            <SelectTrigger className="w-[140px] h-9 bg-white/5 border-white/10 text-white">
+                            <SelectTrigger className="w-[140px] h-9 bg-white/5 border-white/10 text-white [&>span]:text-white">
                                 <Filter className="w-4 h-4 mr-2" />
-                                <SelectValue placeholder="Filter by status" />
+                                <SelectValue placeholder="Filter by status" className="text-white" />
                             </SelectTrigger>
                             <SelectContent className="bg-[#1a1a1a] border-white/10">
-                                <SelectItem value="all">All Status</SelectItem>
-                                <SelectItem value="active">Active</SelectItem>
-                                <SelectItem value="draft">Draft</SelectItem>
-                                <SelectItem value="closed">Closed</SelectItem>
+                                <SelectItem value="all" className="text-white focus:bg-white/10 focus:text-white">All Status</SelectItem>
+                                <SelectItem value="active" className="text-white focus:bg-white/10 focus:text-white">Active</SelectItem>
+                                <SelectItem value="draft" className="text-white focus:bg-white/10 focus:text-white">Draft</SelectItem>
+                                <SelectItem value="closed" className="text-white focus:bg-white/10 focus:text-white">Closed</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
