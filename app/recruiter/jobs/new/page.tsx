@@ -441,7 +441,7 @@ export default function NewJobPage() {
                                         type="number"
                                         value={config.mcq_count}
                                         onChange={(e) => setConfig({ ...config, mcq_count: parseInt(e.target.value) || 0 })}
-                                        className="bg-transparent border-white/10 text-center font-bold text-xl h-12"
+                                        className="bg-transparent border-white/10 text-white text-center font-bold text-xl h-12"
                                     />
                                 </div>
                                 <div className="bg-white/5 p-4 rounded-2xl border border-white/5 hover:border-primary/50 transition-colors">
@@ -453,7 +453,7 @@ export default function NewJobPage() {
                                         type="number"
                                         value={config.subjective_count}
                                         onChange={(e) => setConfig({ ...config, subjective_count: parseInt(e.target.value) || 0 })}
-                                        className="bg-transparent border-white/10 text-center font-bold text-xl h-12"
+                                        className="bg-transparent border-white/10 text-white text-center font-bold text-xl h-12"
                                     />
                                 </div>
                                 <div className="bg-white/5 p-4 rounded-2xl border border-white/5 hover:border-primary/50 transition-colors">
@@ -465,7 +465,7 @@ export default function NewJobPage() {
                                         type="number"
                                         value={config.coding_count}
                                         onChange={(e) => setConfig({ ...config, coding_count: parseInt(e.target.value) || 0 })}
-                                        className="bg-transparent border-white/10 text-center font-bold text-xl h-12"
+                                        className="bg-transparent border-white/10 text-white text-center font-bold text-xl h-12"
                                     />
                                 </div>
                             </div>

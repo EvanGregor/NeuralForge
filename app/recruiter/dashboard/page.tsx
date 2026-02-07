@@ -23,7 +23,7 @@ import { Plus, Users, FileText, Clock, MoreHorizontal, ArrowUpRight, Search, Fil
 import { useAuth } from "@/contexts/AuthContext"
 import { toast } from "sonner"
 import { getSubmissionStats, getSubmissionsByJob } from "@/lib/submissionService"
-import { getJobsByRecruiter } from "@/lib/jobService"
+import { getJobsByRecruiter, deleteJob } from "@/lib/jobService"
 
 interface Job {
     id: string
@@ -145,7 +145,7 @@ export default function RecruiterDashboard() {
     }
 
     const handleEditAssessment = (jobId: string) => {
-        toast.info('Edit functionality coming soon! For now, you can create a new assessment.')
+        router.push(`/recruiter/jobs/${jobId}/edit`)
     }
 
     const handleViewAssessment = (jobId: string) => {
@@ -158,26 +158,55 @@ export default function RecruiterDashboard() {
         }
 
         try {
-            const savedJobs = JSON.parse(localStorage.getItem('assessai_jobs') || '[]')
-            const updatedJobs = savedJobs.filter((job: any) => job.id !== jobId)
-            localStorage.setItem('assessai_jobs', JSON.stringify(updatedJobs))
+            // Delete from Supabase first
+            const deleted = await deleteJob(jobId)
+            
+            if (!deleted) {
+                // If Supabase delete fails, try localStorage as fallback
+                console.warn('Supabase delete failed, trying localStorage fallback')
+                const savedJobs = JSON.parse(localStorage.getItem('assessai_jobs') || '[]')
+                const updatedJobs = savedJobs.filter((job: any) => job.id !== jobId)
+                localStorage.setItem('assessai_jobs', JSON.stringify(updatedJobs))
+            } else {
+                // Also clean up localStorage if it exists
+                const savedJobs = JSON.parse(localStorage.getItem('assessai_jobs') || '[]')
+                const updatedJobs = savedJobs.filter((job: any) => job.id !== jobId)
+                localStorage.setItem('assessai_jobs', JSON.stringify(updatedJobs))
+            }
 
-            const migratedJobs = await Promise.all(updatedJobs.map(async (job: any) => {
-                const submissions = await getSubmissionsByJob(job.id)
-                return {
-                    ...job,
-                    status: job.status || 'draft',
-                    candidatesCount: submissions.length,
-                    questionsCount: job.questionsCount || (job.questions?.length || 0),
-                    createdAt: job.createdAt || job.created_at || new Date().toISOString()
-                }
-            }))
-            setJobs(migratedJobs)
+            // Reload jobs from Supabase
+            const supabaseJobs = await getJobsByRecruiter(user?.id || '')
+            if (supabaseJobs && supabaseJobs.length > 0) {
+                const formattedJobs = supabaseJobs.map((job: any) => ({
+                    id: job.id,
+                    title: job.title,
+                    company: job.company,
+                    status: job.status || (job.is_active ? 'active' : 'draft'),
+                    createdAt: job.created_at || job.createdAt,
+                    candidatesCount: job.candidatesCount || 0,
+                    questionsCount: job.questionsCount || 0
+                }))
+                setJobs(formattedJobs)
+            } else {
+                // Fallback to localStorage
+                const savedJobs = JSON.parse(localStorage.getItem('assessai_jobs') || '[]')
+                const migratedJobs = await Promise.all(savedJobs.map(async (job: any) => {
+                    const submissions = await getSubmissionsByJob(job.id)
+                    return {
+                        ...job,
+                        status: job.status || 'draft',
+                        candidatesCount: submissions.length,
+                        questionsCount: job.questionsCount || (job.questions?.length || 0),
+                        createdAt: job.createdAt || job.created_at || new Date().toISOString()
+                    }
+                }))
+                setJobs(migratedJobs)
+            }
 
             toast.success('Assessment deleted successfully')
         } catch (error) {
             console.error('Error deleting assessment:', error)
-            toast.error('Failed to delete assessment')
+            toast.error('Failed to delete assessment. Please try again.')
         }
     }
 

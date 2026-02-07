@@ -335,7 +335,7 @@ export default function EditJobPage() {
                                     type="number"
                                     value={config.mcq_count}
                                     onChange={(e) => setConfig({ ...config, mcq_count: parseInt(e.target.value) || 0 })}
-                                    className="text-center font-bold text-xl h-12"
+                                    className="text-white text-center font-bold text-xl h-12 bg-white/5 border-white/10"
                                 />
                             </div>
                             <div className="p-4 rounded-xl border bg-muted/30">
@@ -347,7 +347,7 @@ export default function EditJobPage() {
                                     type="number"
                                     value={config.subjective_count}
                                     onChange={(e) => setConfig({ ...config, subjective_count: parseInt(e.target.value) || 0 })}
-                                    className="text-center font-bold text-xl h-12"
+                                    className="text-white text-center font-bold text-xl h-12 bg-white/5 border-white/10"
                                 />
                             </div>
                             <div className="p-4 rounded-xl border bg-muted/30">
@@ -359,7 +359,7 @@ export default function EditJobPage() {
                                     type="number"
                                     value={config.coding_count}
                                     onChange={(e) => setConfig({ ...config, coding_count: parseInt(e.target.value) || 0 })}
-                                    className="text-center font-bold text-xl h-12"
+                                    className="text-white text-center font-bold text-xl h-12 bg-white/5 border-white/10"
                                 />
                             </div>
                         </div>
