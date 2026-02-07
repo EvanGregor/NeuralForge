@@ -242,7 +242,7 @@ function parseGeneratedQuestions(response: string, expectedCount: number) {
                   constraints: [],
                   testCases: [],
                   category: "Generated",
-                  difficulty: "Easy",
+                  difficulty: difficulty?.toLowerCase() || "easy",
                   solutions: {
                     javascript: "function solution(input) { return input; }",
                     python: "def solution(input): return input",

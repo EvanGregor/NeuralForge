@@ -40,6 +40,35 @@ function normalizeExperienceLevel(level: string | undefined | null): ExperienceL
     return mapping[normalized] || 'fresher' // Default to fresher if unknown
 }
 
+/**
+ * Normalize difficulty level to match database constraint
+ * Database allows: 'easy', 'medium', 'hard'
+ */
+function normalizeDifficulty(difficulty: string | undefined | null): 'easy' | 'medium' | 'hard' {
+    if (!difficulty) return 'medium'
+    
+    const normalized = difficulty.toLowerCase().trim()
+    
+    // Map common variations to allowed values
+    const mapping: Record<string, 'easy' | 'medium' | 'hard'> = {
+        'easy': 'easy',
+        'easiest': 'easy',
+        'beginner': 'easy',
+        'simple': 'easy',
+        'medium': 'medium',
+        'med': 'medium',
+        'intermediate': 'medium',
+        'moderate': 'medium',
+        'hard': 'hard',
+        'difficult': 'hard',
+        'advanced': 'hard',
+        'expert': 'hard',
+        'challenging': 'hard'
+    }
+    
+    return mapping[normalized] || 'medium' // Default to medium if unknown
+}
+
 export interface JobWithAssessment extends Job {
     assessment?: Assessment
     questions?: Question[]
@@ -127,7 +156,7 @@ export async function createJobWithAssessment(data: {
         const questionsToInsert = data.questions.map((q, index) => ({
             assessment_id: assessment.id,
             type: q.type,
-            difficulty: q.difficulty || 'medium',
+            difficulty: normalizeDifficulty(q.difficulty),
             skill_tags: q.skill_tags || [],
             marks: q.marks || 10,
             content: q.content,
@@ -141,6 +170,18 @@ export async function createJobWithAssessment(data: {
 
         if (questionsError) {
             console.error('Error creating questions:', questionsError)
+            console.error('Questions data:', questionsToInsert.map(q => ({
+                type: q.type,
+                difficulty: q.difficulty,
+                has_content: !!q.content
+            })))
+            
+            // Provide more helpful error message for constraint violations
+            if (questionsError.code === '23514') {
+                console.error('Database constraint violation. Check that difficulty is one of: easy, medium, hard (lowercase)')
+                console.error('Received difficulty values:', questionsToInsert.map(q => q.difficulty))
+            }
+            
             // Rollback: delete assessment and job
             await supabase.from('assessments').delete().eq('id', assessment.id)
             await supabase.from('jobs').delete().eq('id', job.id)
