@@ -71,7 +71,7 @@ export default function EditJobPage() {
                 // Try Supabase first
                 const { getJobById } = await import('@/lib/jobService')
                 const supabaseJob = await getJobById(jobId)
-                
+
                 if (supabaseJob) {
                     setCompany(supabaseJob.company || "")
                     setTitle(supabaseJob.title || "")
@@ -164,14 +164,14 @@ export default function EditJobPage() {
             // Try Supabase first
             const { updateJob, getJobById } = await import('@/lib/jobService')
             const { supabase } = await import('@/lib/supabase')
-            
+
             // Update job
             const jobUpdated = await updateJob(jobId, {
                 title,
                 company,
                 description: jobDescription
             })
-            
+
             if (jobUpdated) {
                 // Update assessment config if it exists
                 const job = await getJobById(jobId)
@@ -183,12 +183,12 @@ export default function EditJobPage() {
                             updated_at: new Date().toISOString()
                         })
                         .eq('id', job.assessment.id)
-                    
+
                     if (assessmentError) {
                         console.error('Error updating assessment config:', assessmentError)
                     }
                 }
-                
+
                 // Also update localStorage as backup
                 try {
                     const savedJobs = JSON.parse(localStorage.getItem('assessai_jobs') || '[]')
@@ -209,7 +209,7 @@ export default function EditJobPage() {
                 } catch (e) {
                     console.warn('Failed to update localStorage backup:', e)
                 }
-                
+
                 toast.success("Assessment updated successfully")
                 router.push('/recruiter/dashboard')
             } else {
@@ -245,7 +245,7 @@ export default function EditJobPage() {
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-screen">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white" />
             </div>
         )
     }
@@ -261,8 +261,8 @@ export default function EditJobPage() {
                         </Button>
                     </Link>
                     <div>
-                        <h1 className="text-2xl font-bold text-foreground">Edit Assessment</h1>
-                        <p className="text-muted-foreground">Update assessment details and configuration</p>
+                        <h1 className="text-2xl font-bold text-white">Edit Assessment</h1>
+                        <p className="text-white/50">Update assessment details and configuration</p>
                     </div>
                 </div>
                 <Button onClick={handleSave} className="rounded-full">
@@ -273,39 +273,41 @@ export default function EditJobPage() {
 
             <div className="grid gap-8 max-w-4xl mx-auto">
                 {/* Basic Details */}
-                <Card>
+                <Card className="bg-white/5 border-white/10">
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <Briefcase className="w-5 h-5 text-primary" />
+                        <CardTitle className="flex items-center gap-2 text-white">
+                            <Briefcase className="w-5 h-5 text-blue-400" />
                             Assessment Details
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div className="grid md:grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <Label htmlFor="title">Job Title</Label>
+                                <Label htmlFor="title" className="text-white/70">Job Title</Label>
                                 <Input
                                     id="title"
                                     value={title}
                                     onChange={(e) => setTitle(e.target.value)}
+                                    className="bg-white/5 border-white/10 text-white"
                                 />
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="company">Company Name</Label>
+                                <Label htmlFor="company" className="text-white/70">Company Name</Label>
                                 <Input
                                     id="company"
                                     value={company}
                                     onChange={(e) => setCompany(e.target.value)}
+                                    className="bg-white/5 border-white/10 text-white"
                                 />
                             </div>
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="description">Job Description</Label>
+                            <Label htmlFor="description" className="text-white/70">Job Description</Label>
                             <Textarea
                                 id="description"
                                 value={jobDescription}
                                 onChange={(e) => setJobDescription(e.target.value)}
-                                className="min-h-[150px]"
+                                className="min-h-[150px] bg-white/5 border-white/10 text-white"
                             />
                         </div>
                     </CardContent>

@@ -62,7 +62,7 @@ export default function LeaderboardPage() {
                 // Load job data from Supabase
                 const { getJobById } = await import('@/lib/jobService')
                 const supabaseJob = await getJobById(jobId)
-                
+
                 if (supabaseJob) {
                     setJob({
                         id: supabaseJob.id,
@@ -82,10 +82,10 @@ export default function LeaderboardPage() {
                 // Load real candidate data from submissions
                 const { getAllSubmissions } = await import('@/lib/submissionService')
                 const allSubmissions = await getAllSubmissions()
-                
+
                 // Filter submissions for this job
                 const jobSubmissions = allSubmissions.filter((s: any) => s.jobId === jobId || s.assessmentId === jobId)
-                
+
                 // Convert to candidate format
                 const realCandidates: Candidate[] = jobSubmissions.map((s: any) => ({
                     id: s.id,
@@ -110,7 +110,7 @@ export default function LeaderboardPage() {
                 if (foundJob) {
                     setJob(foundJob)
                 }
-                
+
                 const { getAllSubmissions } = require('@/lib/submissionService')
                 const allSubmissions = getAllSubmissions()
                 const jobSubmissions = allSubmissions.filter((s: any) => s.assessmentId === jobId)
@@ -132,27 +132,27 @@ export default function LeaderboardPage() {
                 setLoading(false)
             }
         }
-        
+
         loadData()
-        
+
         // Listen for new submissions
         const handleStorageChange = (e: StorageEvent) => {
             if (e.key === 'recruiter_submissions') {
                 loadData()
             }
         }
-        
+
         const handleCustomEvent = () => {
             loadData()
         }
-        
+
         const handleCustomStorage = () => {
             loadData()
         }
-        
+
         window.addEventListener('storage', handleStorageChange)
         window.addEventListener('submissionUpdated', handleCustomStorage)
-        
+
         return () => {
             window.removeEventListener('storage', handleStorageChange)
             window.removeEventListener('submissionUpdated', handleCustomStorage)
@@ -186,7 +186,7 @@ export default function LeaderboardPage() {
                     <Button
                         variant="ghost"
                         onClick={() => router.back()}
-                        className="text-muted-foreground hover:text-white p-0 h-auto mb-2"
+                        className="text-white/50 hover:text-white p-0 h-auto mb-2"
                     >
                         <ArrowLeft className="w-4 h-4 mr-2" />
                         Back
@@ -203,8 +203,8 @@ export default function LeaderboardPage() {
                             size="sm"
                             onClick={() => setFilter(f)}
                             className={`capitalize rounded-lg ${filter === f
-                                ? 'bg-primary text-primary-foreground shadow-lg'
-                                : 'text-muted-foreground hover:text-white hover:bg-white/5'
+                                ? 'bg-white text-black shadow-lg'
+                                : 'text-white/50 hover:text-white hover:bg-white/5'
                                 }`}
                         >
                             {f}
@@ -217,10 +217,10 @@ export default function LeaderboardPage() {
             <Card className="bg-white/5 border-white/10 backdrop-blur-xl">
                 <div className="p-4 border-b border-white/10 flex items-center justify-between">
                     <div className="relative">
-                        <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Search className="absolute left-3 top-2.5 h-4 w-4 text-white/30" />
                         <Input placeholder="Search candidates..." className="pl-9 bg-black/20 border-white/10 w-[300px]" />
                     </div>
-                    <Button variant="outline" className="text-muted-foreground border-white/10 hover:bg-white/5 gap-2">
+                    <Button variant="outline" className="text-white/60 border-white/10 hover:bg-white/5 gap-2">
                         <SlidersHorizontal className="w-4 h-4" />
                         Filters
                     </Button>
@@ -268,8 +268,8 @@ export default function LeaderboardPage() {
 
                                     <div className="flex items-center gap-4">
                                         <Badge className={`h-8 px-3 ${candidate.status === 'shortlisted' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
-                                                candidate.status === 'rejected' ? 'bg-red-500/10 text-red-400 border-red-500/20' :
-                                                    'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                                            candidate.status === 'rejected' ? 'bg-red-500/10 text-red-400 border-red-500/20' :
+                                                'bg-amber-500/10 text-amber-400 border-amber-500/20'
                                             } capitalize`}>
                                             {candidate.status}
                                         </Badge>

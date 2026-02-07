@@ -180,7 +180,7 @@ export default function NewJobPage() {
                 'senior': 'senior', 'sr': 'senior', 'lead': 'senior', 'principal': 'senior', 'expert': 'senior'
             }
             experienceLevel = levelMapping[experienceLevel] || 'fresher'
-            
+
             // Save to Supabase
             const result = await createJobWithAssessment({
                 title: parsedJD.title || 'Untitled Assessment',
@@ -225,7 +225,7 @@ export default function NewJobPage() {
                 } catch (e) {
                     console.warn('Failed to save to localStorage backup:', e)
                 }
-                
+
                 router.push('/recruiter/dashboard')
             } else {
                 toast.error('Failed to create assessment. Please try again.')
@@ -247,7 +247,7 @@ export default function NewJobPage() {
             {/* Header */}
             <div className="flex items-center justify-center relative mb-8">
                 <Link href="/recruiter/dashboard" className="absolute left-0">
-                    <Button variant="ghost" className="text-muted-foreground hover:text-white">
+                    <Button variant="ghost" className="text-white/50 hover:text-white">
                         <ArrowLeft className="w-4 h-4 mr-2" />
                         Back to Dashboard
                     </Button>
@@ -265,15 +265,15 @@ export default function NewJobPage() {
                         return (
                             <div key={s.id} className="flex items-center">
                                 <div className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all duration-300 ${isActive
-                                        ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/25 scale-105'
-                                        : isCompleted
-                                            ? 'bg-primary/20 text-primary'
-                                            : 'bg-muted text-muted-foreground'
+                                    ? 'bg-white text-black shadow-lg scale-105'
+                                    : isCompleted
+                                        ? 'bg-white/20 text-white'
+                                        : 'bg-white/10 text-white/50'
                                     }`}>
                                     <s.icon className="w-4 h-4" />
                                     <span className="text-sm font-medium hidden sm:inline">{s.label}</span>
                                 </div>
-                                {i < 3 && <div className="w-8 h-0.5 bg-muted mx-2" />}
+                                {i < 3 && <div className="w-8 h-0.5 bg-white/10 mx-2" />}
                             </div>
                         )
                     })}
@@ -289,32 +289,32 @@ export default function NewJobPage() {
                                 <Briefcase className="w-6 h-6 text-primary" />
                                 Create New Assessment
                             </CardTitle>
-                            <CardDescription className="text-muted-foreground">
+                            <CardDescription className="text-white/50">
                                 Paste the job description. Our AI will analyze it to suggest the perfect assessment structure.
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-6">
                             <div className="space-y-2">
-                                <Label htmlFor="company">Company Name</Label>
+                                <Label htmlFor="company" className="text-white/70">Company Name</Label>
                                 <Input
                                     id="company"
                                     placeholder="e.g., Acme Corp"
                                     value={company}
                                     onChange={(e) => setCompany(e.target.value)}
-                                    className="bg-background/50 border-white/10"
+                                    className="bg-white/5 border-white/10 text-white placeholder:text-white/30"
                                 />
                             </div>
 
                             <div className="space-y-2">
-                                <Label htmlFor="jd">Job Description</Label>
+                                <Label htmlFor="jd" className="text-white/70">Job Description</Label>
                                 <Textarea
                                     id="jd"
                                     placeholder="Paste the full JD here..."
                                     value={jobDescription}
                                     onChange={(e) => setJobDescription(e.target.value)}
-                                    className="min-h-[300px] bg-background/50 border-white/10 resize-none p-4"
+                                    className="min-h-[300px] bg-white/5 border-white/10 text-white placeholder:text-white/30 resize-none p-4"
                                 />
-                                <p className="text-xs text-muted-foreground text-right">{jobDescription.length} chars</p>
+                                <p className="text-xs text-white/40 text-right">{jobDescription.length} chars</p>
                             </div>
 
                             {error && (
@@ -355,7 +355,7 @@ export default function NewJobPage() {
                                         <Sparkles className="w-6 h-6 text-secondary" />
                                         AI Analysis Complete
                                     </CardTitle>
-                                    <CardDescription className="text-muted-foreground">
+                                    <CardDescription className="text-white/50">
                                         We extracted the following requirements from your JD.
                                     </CardDescription>
                                 </div>
@@ -372,12 +372,12 @@ export default function NewJobPage() {
                         <CardContent className="space-y-8">
                             <div className="grid md:grid-cols-2 gap-4">
                                 <div className="bg-white/5 rounded-2xl p-4 border border-white/5">
-                                    <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Position</p>
+                                    <p className="text-xs text-white/40 uppercase tracking-wide mb-1">Position</p>
                                     <p className="text-lg font-bold text-white">{parsedJD.title}</p>
                                 </div>
                                 <div className="bg-white/5 rounded-2xl p-4 border border-white/5">
-                                    <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Experience Level</p>
-                                    <Badge variant="outline" className="text-primary border-primary/20 bg-primary/10 capitalize text-sm">
+                                    <p className="text-xs text-white/40 uppercase tracking-wide mb-1">Experience Level</p>
+                                    <Badge variant="outline" className="text-blue-400 border-blue-400/20 bg-blue-400/10 capitalize text-sm">
                                         {parsedJD.experience_level}
                                     </Badge>
                                 </div>
@@ -426,7 +426,7 @@ export default function NewJobPage() {
                                 <Settings className="w-6 h-6 text-white" />
                                 Configure Assessment
                             </CardTitle>
-                            <CardDescription className="text-muted-foreground">
+                            <CardDescription className="text-white/50">
                                 Customize the difficulty and composition of the test.
                             </CardDescription>
                         </CardHeader>
@@ -515,7 +515,7 @@ export default function NewJobPage() {
                             </div>
                         </div>
                         <h2 className="text-2xl font-bold text-white mt-8 mb-2">Generating Assessment...</h2>
-                        <p className="text-muted-foreground">Crafting questions tailored to the job profile.</p>
+                        <p className="text-white/50">Crafting questions tailored to the job profile.</p>
                     </div>
                 )}
 
@@ -528,25 +528,25 @@ export default function NewJobPage() {
                                     <CheckCircle className="w-10 h-10 text-emerald-500" />
                                 </div>
                                 <h2 className="text-3xl font-bold text-white mb-2">Ready to Launch!</h2>
-                                <p className="text-muted-foreground">Your assessment has been generated and is ready to be published.</p>
+                                <p className="text-white/50">Your assessment has been generated and is ready to be published.</p>
                             </div>
 
                             <div className="grid grid-cols-4 gap-4 max-w-2xl mx-auto">
                                 <div className="bg-white/5 p-4 rounded-2xl text-center border border-white/5">
                                     <p className="text-2xl font-bold text-white">{generatedQuestions.summary.mcq_count}</p>
-                                    <p className="text-xs text-muted-foreground">MCQs</p>
+                                    <p className="text-xs text-white/40">MCQs</p>
                                 </div>
                                 <div className="bg-white/5 p-4 rounded-2xl text-center border border-white/5">
                                     <p className="text-2xl font-bold text-white">{generatedQuestions.summary.subjective_count}</p>
-                                    <p className="text-xs text-muted-foreground">Written</p>
+                                    <p className="text-xs text-white/40">Written</p>
                                 </div>
                                 <div className="bg-white/5 p-4 rounded-2xl text-center border border-white/5">
                                     <p className="text-2xl font-bold text-white">{generatedQuestions.summary.coding_count}</p>
-                                    <p className="text-xs text-muted-foreground">Coding</p>
+                                    <p className="text-xs text-white/40">Coding</p>
                                 </div>
                                 <div className="bg-white/5 p-4 rounded-2xl text-center border border-white/5">
-                                    <p className="text-2xl font-bold text-primary">{generatedQuestions.summary.total_marks}</p>
-                                    <p className="text-xs text-muted-foreground">Marks</p>
+                                    <p className="text-2xl font-bold text-blue-400">{generatedQuestions.summary.total_marks}</p>
+                                    <p className="text-xs text-white/40">Marks</p>
                                 </div>
                             </div>
 

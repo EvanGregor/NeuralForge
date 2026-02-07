@@ -137,11 +137,11 @@ function calculateCodeSimilarity(code1: string, code2: string): number {
 /**
  * Detect plagiarism in subjective answers
  */
-export function detectSubjectivePlagiarism(
+export async function detectSubjectivePlagiarism(
     submission: CandidateSubmission,
     questionId: string,
     threshold: number = 70
-): PlagiarismResult {
+): Promise<PlagiarismResult> {
     const answer = submission.answers[questionId]
     const answerText = answer?.response?.text || ''
     
@@ -154,7 +154,7 @@ export function detectSubjectivePlagiarism(
         }
     }
     
-    const allSubmissions = getAllSubmissions()
+    const allSubmissions = await getAllSubmissions()
     const similarSubmissions: PlagiarismResult['similarSubmissions'] = []
     
     // Compare with other submissions for the same question

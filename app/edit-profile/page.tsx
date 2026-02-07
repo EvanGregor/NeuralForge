@@ -43,7 +43,7 @@ export default function EditProfilePage() {
   const fetchUserData = async () => {
     try {
       setIsLoading(true)
-      
+
       // First try to get data from profiles table
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
@@ -69,7 +69,7 @@ export default function EditProfilePage() {
       } else {
         console.log("No profile data in database, using auth metadata")
       }
-      
+
       setFormData(userData)
     } catch (err) {
       console.error("Error fetching user data:", err)
@@ -132,7 +132,7 @@ export default function EditProfilePage() {
         return
       }
 
-      setSuccess("Profile updated successfully in both auth and database!")
+      setSuccess("Profile updated successfully!")
       // Redirect to dashboard after a short delay
       setTimeout(() => {
         router.push("/dashboard")
@@ -147,8 +147,8 @@ export default function EditProfilePage() {
 
   if (loading || isLoading) {
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="flex items-center space-x-2 text-white">
+      <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
+        <div className="flex items-center space-x-2 text-[#E8C547]">
           <Loader2 className="h-6 w-6 animate-spin" />
           <span>Loading profile...</span>
         </div>
@@ -161,66 +161,66 @@ export default function EditProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 p-4">
+    <div className="min-h-screen bg-[#0A0A0A] p-4">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="mb-8">
           <Button
             variant="ghost"
             onClick={() => router.back()}
-            className="mb-4 text-gray-300 hover:text-white hover:bg-gray-800"
+            className="mb-4 text-white/70 hover:text-white hover:bg-white/10"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back
           </Button>
-          
+
           <div className="flex items-center space-x-3">
-            <div className="w-12 h-12 bg-red-600 rounded-lg flex items-center justify-center">
-              <User className="w-6 h-6 text-white" />
+            <div className="w-12 h-12 bg-[#E8C547]/10 rounded-lg flex items-center justify-center border border-[#E8C547]/20">
+              <User className="w-6 h-6 text-[#E8C547]" />
             </div>
             <div>
               <h1 className="text-3xl font-bold text-white">Edit Profile</h1>
-              <p className="text-gray-300">Update your personal information and preferences</p>
+              <p className="text-white/60">Update your personal information and preferences</p>
             </div>
           </div>
         </div>
 
         {/* Profile Form */}
-        <Card className="bg-white border-gray-200 shadow-xl">
+        <Card className="bg-white/5 border-white/10 shadow-xl">
           <CardHeader className="pb-4">
-            <CardTitle className="text-xl font-semibold text-gray-800">Personal Information</CardTitle>
-            <CardDescription className="text-gray-600">
+            <CardTitle className="text-xl font-semibold text-white">Personal Information</CardTitle>
+            <CardDescription className="text-white/50">
               Update your profile details below
             </CardDescription>
           </CardHeader>
-          
+
           <CardContent>
             {error && (
-              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-red-600 text-sm">{error}</p>
+              <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
+                <p className="text-red-400 text-sm">{error}</p>
               </div>
             )}
-            
+
             {success && (
-              <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-                <p className="text-green-600 text-sm">{success}</p>
+              <div className="mb-6 p-4 bg-green-500/10 border border-green-500/20 rounded-lg">
+                <p className="text-green-400 text-sm">{success}</p>
               </div>
             )}
 
             <form onSubmit={handleSave} className="space-y-6">
               {/* Full Name */}
               <div className="space-y-2">
-                <Label htmlFor="fullName" className="text-sm font-medium text-gray-700">
+                <Label htmlFor="fullName" className="text-sm font-medium text-white/70">
                   Full Name
                 </Label>
                 <div className="relative">
-                  <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  <User className="absolute left-3 top-3 h-4 w-4 text-white/40" />
                   <Input
                     id="fullName"
                     type="text"
                     value={formData.fullName}
                     onChange={(e) => handleInputChange("fullName", e.target.value)}
-                    className="pl-10 border-gray-200 focus:border-red-500 focus:ring-red-500"
+                    className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-white/30 focus:border-[#E8C547] focus:ring-[#E8C547]/20"
                     placeholder="Enter your full name"
                     required
                   />
@@ -229,36 +229,36 @@ export default function EditProfilePage() {
 
               {/* Email */}
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-sm font-medium text-gray-700">
+                <Label htmlFor="email" className="text-sm font-medium text-white/70">
                   Email Address
                 </Label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  <Mail className="absolute left-3 top-3 h-4 w-4 text-white/40" />
                   <Input
                     id="email"
                     type="email"
                     value={formData.email}
-                    className="pl-10 border-gray-200 bg-gray-50 text-gray-500"
+                    className="pl-10 bg-white/5 border-white/10 text-white/50 cursor-not-allowed"
                     disabled
                   />
                 </div>
-                <p className="text-xs text-gray-500">Email cannot be changed</p>
+                <p className="text-xs text-white/40">Email cannot be changed</p>
               </div>
 
               {/* Role and Location Row */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Role */}
                 <div className="space-y-2">
-                  <Label htmlFor="role" className="text-sm font-medium text-gray-700">
+                  <Label htmlFor="role" className="text-sm font-medium text-white/70">
                     Target Role
                   </Label>
                   <div className="relative">
-                    <Briefcase className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                    <Briefcase className="absolute left-3 top-3 h-4 w-4 text-white/40 z-10" />
                     <Select value={formData.role} onValueChange={(value) => handleInputChange("role", value)}>
-                      <SelectTrigger className="pl-10 border-gray-200 focus:border-red-500 focus:ring-red-500">
+                      <SelectTrigger className="pl-10 bg-white/5 border-white/10 text-white focus:border-[#E8C547] focus:ring-[#E8C547]/20">
                         <SelectValue placeholder="Select your role" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="bg-[#1a1a1a] border-white/10 text-white">
                         <SelectItem value="web-developer">Web Developer</SelectItem>
                         <SelectItem value="data-analyst">Data Analyst</SelectItem>
                         <SelectItem value="software-engineer">Software Engineer</SelectItem>
@@ -274,17 +274,17 @@ export default function EditProfilePage() {
 
                 {/* Location */}
                 <div className="space-y-2">
-                  <Label htmlFor="location" className="text-sm font-medium text-gray-700">
+                  <Label htmlFor="location" className="text-sm font-medium text-white/70">
                     Location
                   </Label>
                   <div className="relative">
-                    <MapPin className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                    <MapPin className="absolute left-3 top-3 h-4 w-4 text-white/40" />
                     <Input
                       id="location"
                       type="text"
                       value={formData.location}
                       onChange={(e) => handleInputChange("location", e.target.value)}
-                      className="pl-10 border-gray-200 focus:border-red-500 focus:ring-red-500"
+                      className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-white/30 focus:border-[#E8C547] focus:ring-[#E8C547]/20"
                       placeholder="Enter your city"
                       required
                     />
@@ -292,7 +292,7 @@ export default function EditProfilePage() {
                 </div>
               </div>
 
-              <Separator className="my-6" />
+              <Separator className="my-6 bg-white/10" />
 
               {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row gap-4 justify-end">
@@ -300,14 +300,14 @@ export default function EditProfilePage() {
                   type="button"
                   variant="outline"
                   onClick={() => router.back()}
-                  className="border-gray-300 text-gray-700 hover:bg-gray-50"
+                  className="bg-transparent border-white/10 text-white hover:bg-white/10"
                 >
                   Cancel
                 </Button>
                 <Button
                   type="submit"
                   disabled={isSaving}
-                  className="bg-red-600 hover:bg-red-700 text-white"
+                  className="bg-[#E8C547] hover:bg-[#E8C547]/90 text-black"
                 >
                   {isSaving ? (
                     <>

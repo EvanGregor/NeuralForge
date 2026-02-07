@@ -85,29 +85,30 @@ export default function CandidateReportPage() {
     const [submission, setSubmission] = useState<CandidateSubmission | null>(null)
     const [questions, setQuestions] = useState<any[]>([])
     const [showAnswers, setShowAnswers] = useState(false)
+    const [fullResumeData, setFullResumeData] = useState<any>(null)
 
     useEffect(() => {
         const loadSubmission = async () => {
             // Decode the candidate ID (in case it was URL encoded)
             const decodedId = decodeURIComponent(candidateId)
-            
+
             // Load real submission data (now async)
             let submission = await getSubmissionById(decodedId)
-            
+
             // If still not found, try the original ID
             if (!submission) {
                 submission = await getSubmissionById(candidateId)
             }
-            
+
             if (!submission) {
                 console.error('Submission not found for ID:', candidateId, 'or decoded:', decodedId)
                 try {
                     const { getAllSubmissions } = await import('@/lib/submissionService')
                     const allSubmissions = await getAllSubmissions()
-                    console.log('Available submissions:', allSubmissions.map((s: any) => ({ 
-                        id: s.id, 
-                        name: s.candidateInfo?.name || 'Unknown', 
-                        email: s.candidateInfo?.email || 'No email' 
+                    console.log('Available submissions:', allSubmissions.map((s: any) => ({
+                        id: s.id,
+                        name: s.candidateInfo?.name || 'Unknown',
+                        email: s.candidateInfo?.email || 'No email'
                     })))
                 } catch (e) {
                     console.error('Error loading submissions:', e)
@@ -118,6 +119,31 @@ export default function CandidateReportPage() {
 
             // Store submission for answers display
             setSubmission(submission)
+
+            // Load full resume data from resume_data table if candidate has one
+            if (submission.candidateInfo?.userId) {
+                try {
+                    const { getResumeData } = await import('@/lib/resumeService')
+                    const resumeData = await getResumeData(submission.candidateInfo.userId)
+                    if (resumeData) {
+                        setFullResumeData({
+                            skills: resumeData.skills || [],
+                            personalInfo: resumeData.personal_info || {},
+                            experience: resumeData.experience || [],
+                            education: resumeData.education || [],
+                            summary: resumeData.summary || '',
+                            achievements: resumeData.achievements || [],
+                            certifications: resumeData.certifications || [],
+                            languages: resumeData.languages || [],
+                            projects: resumeData.projects || [],
+                            atsScore: resumeData.ats_score || 0,
+                            updatedAt: resumeData.updated_at
+                        })
+                    }
+                } catch (error) {
+                    console.error('Error loading full resume data:', error)
+                }
+            }
 
             // Load questions from job (try Supabase first, fallback to localStorage)
             try {
@@ -143,11 +169,33 @@ export default function CandidateReportPage() {
             }
 
             // Calculate time spent with safe defaults
-            const startedAt = submission.candidateInfo?.startedAt 
-                ? new Date(submission.candidateInfo.startedAt) 
+            const startedAt = submission.candidateInfo?.startedAt
+                ? new Date(submission.candidateInfo.startedAt)
                 : new Date(submission.submittedAt || new Date().toISOString())
             const submittedAt = new Date(submission.submittedAt || new Date().toISOString())
             const timeSpent = Math.round((submittedAt.getTime() - startedAt.getTime()) / 60000) // minutes
+
+            // Get passing percentage from job/assessment
+            let passingPercentage = 50 // default
+            try {
+                const { getJobById } = await import('@/lib/jobService')
+                const job = await getJobById(submission.jobId)
+                if (job?.assessment?.passing_percentage !== undefined) {
+                    passingPercentage = job.assessment.passing_percentage
+                } else if ((job as any)?.config?.passing_percentage !== undefined) {
+                    passingPercentage = (job as any).config.passing_percentage
+                }
+            } catch (e) {
+                console.warn('Could not fetch passing percentage, using default 50%')
+            }
+
+            // Determine if candidate passed:
+            // 1. If status is 'shortlisted', they definitely passed
+            // 2. Otherwise, check percentage against passing threshold
+            const candidatePercentage = submission.scores?.percentage || 0
+            const isShortlisted = submission.status === 'shortlisted'
+            const passedByPercentage = candidatePercentage >= passingPercentage
+            const passed = isShortlisted || passedByPercentage
 
             // Convert submission to report format
             const report: CandidateReport = {
@@ -161,14 +209,14 @@ export default function CandidateReportPage() {
                 status: submission.status || 'pending',
                 totalScore: submission.scores?.totalScore || 0,
                 totalPossible: submission.scores?.totalPossible || 0,
-                percentage: submission.scores?.percentage || 0,
-                passed: (submission.scores?.percentage || 0) >= 60, // Assuming 60% passing
+                percentage: candidatePercentage,
+                passed: passed,
                 sections: {
                     mcq: submission.scores?.sectionScores?.mcq || { score: 0, total: 0, correct: 0, totalQuestions: 0 },
                     subjective: submission.scores?.sectionScores?.subjective || { score: 0, total: 0 },
                     coding: submission.scores?.sectionScores?.coding || { score: 0, total: 0 }
                 },
-                skillScores: submission.scores?.skillScores 
+                skillScores: submission.scores?.skillScores
                     ? Object.entries(submission.scores.skillScores).map(([skill, data]: [string, any]) => ({
                         skill,
                         score: data.score,
@@ -176,7 +224,7 @@ export default function CandidateReportPage() {
                         percentage: data.percentage
                     }))
                     : [],
-                resumeSkills: submission.resumeData?.skills || [],
+                resumeSkills: fullResumeData?.skills || submission.resumeData?.skills || [],
                 tabSwitches: submission.antiCheatData?.tab_switches || 0,
                 pasteCount: submission.antiCheatData?.copy_paste_detected ? 1 : 0,
                 aiInsights: generateAIInsights(submission),
@@ -186,13 +234,13 @@ export default function CandidateReportPage() {
             setReport(report)
             setLoading(false)
         }
-        
+
         loadSubmission()
     }, [candidateId])
 
     const generateAIInsights = (submission: CandidateSubmission): string[] => {
         const insights: string[] = []
-        
+
         if (submission.scores) {
             if (submission.scores.percentage >= 80) {
                 insights.push("Excellent overall performance with strong technical knowledge.")
@@ -203,8 +251,8 @@ export default function CandidateReportPage() {
             }
 
             // Section-specific insights
-            const mcqPercent = submission.scores.sectionScores.mcq.total > 0 
-                ? (submission.scores.sectionScores.mcq.score / submission.scores.sectionScores.mcq.total) * 100 
+            const mcqPercent = submission.scores.sectionScores.mcq.total > 0
+                ? (submission.scores.sectionScores.mcq.score / submission.scores.sectionScores.mcq.total) * 100
                 : 0
             if (mcqPercent >= 80) {
                 insights.push("Strong performance in multiple choice questions.")
@@ -228,14 +276,17 @@ export default function CandidateReportPage() {
 
     const generateSkillMismatches = (submission: CandidateSubmission) => {
         const mismatches: CandidateReport['skillMismatches'] = []
-        
-        if (submission.resumeData?.skills && submission.scores?.skillScores) {
-            const resumeSkills = submission.resumeData.skills.map((s: string) => s.toLowerCase())
-            
+
+        // Use fullResumeData if available, otherwise fallback to submission resumeData
+        const resumeSkillsList = fullResumeData?.skills || submission.resumeData?.skills || []
+
+        if (resumeSkillsList.length > 0 && submission.scores?.skillScores) {
+            const resumeSkills = resumeSkillsList.map((s: string) => s.toLowerCase())
+
             Object.entries(submission.scores.skillScores).forEach(([skill, data]) => {
                 const skillLower = skill.toLowerCase()
                 const claimedInResume = resumeSkills.some((rs: string) => rs.includes(skillLower))
-                
+
                 if (claimedInResume && data.percentage < 50) {
                     mismatches.push({
                         skill,
@@ -257,12 +308,34 @@ export default function CandidateReportPage() {
             // Reload data
             const submission = await getSubmissionById(candidateId)
             if (submission) {
-                const startedAt = new Date(submission.candidateInfo.startedAt)
+                const startedAt = new Date(submission.candidateInfo?.startedAt || submission.submittedAt)
                 const submittedAt = new Date(submission.submittedAt)
                 const timeSpent = Math.round((submittedAt.getTime() - startedAt.getTime()) / 60000)
-                
+
+                // Get passing percentage
+                let passingPercentage = 50
+                try {
+                    const { getJobById } = await import('@/lib/jobService')
+                    const job = await getJobById(submission.jobId)
+                    if (job?.assessment?.passing_percentage !== undefined) {
+                        passingPercentage = job.assessment.passing_percentage
+                    } else if ((job as any)?.config?.passing_percentage !== undefined) {
+                        passingPercentage = (job as any).config.passing_percentage
+                    }
+                } catch (e) {
+                    console.warn('Could not fetch passing percentage')
+                }
+
+                // Update passed status based on new status
+                const candidatePercentage = submission.scores?.percentage || 0
+                const isShortlisted = newStatus === 'shortlisted'
+                const passedByPercentage = candidatePercentage >= passingPercentage
+                const passed = isShortlisted || passedByPercentage
+
                 const updatedReport: CandidateReport = {
                     ...report!,
+                    status: newStatus,
+                    passed: passed,
                     timeSpent
                 }
                 setReport(updatedReport)
@@ -275,7 +348,7 @@ export default function CandidateReportPage() {
             toast.error('Unable to generate report: Missing data')
             return
         }
-        
+
         try {
             const { downloadPDFReport } = require('@/lib/pdfReportGenerator')
             downloadPDFReport(submission, questions, {
@@ -300,7 +373,7 @@ export default function CandidateReportPage() {
     if (!report) {
         return (
             <div className="min-h-screen flex items-center justify-center">
-                <p className="text-muted-foreground">Candidate not found</p>
+                <p className="text-white/50">Candidate not found</p>
             </div>
         )
     }
@@ -312,7 +385,7 @@ export default function CandidateReportPage() {
                 <Button
                     variant="ghost"
                     onClick={() => router.back()}
-                    className="text-gray-600 hover:text-gray-900"
+                    className="text-white/50 hover:text-white"
                 >
                     <ArrowLeft className="w-4 h-4 mr-2" />
                     Back to Candidates
@@ -323,7 +396,7 @@ export default function CandidateReportPage() {
                             <Button
                                 variant="outline"
                                 onClick={() => handleStatusChange('shortlisted')}
-                                className="text-emerald-600 border-emerald-200 hover:bg-emerald-50"
+                                className="text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/10"
                             >
                                 <CheckCircle className="w-4 h-4 mr-2" />
                                 Shortlist
@@ -331,7 +404,7 @@ export default function CandidateReportPage() {
                             <Button
                                 variant="outline"
                                 onClick={() => handleStatusChange('rejected')}
-                                className="text-red-600 border-red-200 hover:bg-red-50"
+                                className="text-red-400 border-red-500/30 hover:bg-red-500/10"
                             >
                                 <XCircle className="w-4 h-4 mr-2" />
                                 Reject
@@ -340,7 +413,7 @@ export default function CandidateReportPage() {
                     )}
                     <Button
                         onClick={handleDownloadReport}
-                        className="bg-primary hover:bg-primary/90"
+                        className="bg-white text-black hover:bg-white/90"
                     >
                         <Download className="w-4 h-4 mr-2" />
                         Download PDF Report
@@ -411,12 +484,11 @@ export default function CandidateReportPage() {
                         </div>
                         <div>
                             <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Status</p>
-                            <Badge className={`px-2 py-1 text-xs ${
-                                report.status === 'shortlisted' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
-                                report.status === 'rejected' ? 'bg-red-50 text-red-700 border-red-200' :
-                                report.status === 'evaluated' ? 'bg-blue-50 text-blue-700 border-blue-200' :
-                                'bg-amber-50 text-amber-700 border-amber-200'
-                            }`}>
+                            <Badge className={`px-2 py-1 text-xs ${report.status === 'shortlisted' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                                    report.status === 'rejected' ? 'bg-red-50 text-red-700 border-red-200' :
+                                        report.status === 'evaluated' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                                            'bg-amber-50 text-amber-700 border-amber-200'
+                                }`}>
                                 {report.status}
                             </Badge>
                         </div>
@@ -554,13 +626,12 @@ export default function CandidateReportPage() {
                                             </div>
                                         </div>
                                         <div className="mt-4">
-                                            <div className="text-sm font-semibold text-gray-700 mb-2">Status: 
-                                                <span className={`ml-2 ${
-                                                    benchmark.overallStatus === 'top_performer' ? 'text-emerald-600' :
-                                                    benchmark.overallStatus === 'above_average' ? 'text-blue-600' :
-                                                    benchmark.overallStatus === 'average' ? 'text-amber-600' :
-                                                    'text-red-600'
-                                                }`}>
+                                            <div className="text-sm font-semibold text-gray-700 mb-2">Status:
+                                                <span className={`ml-2 ${benchmark.overallStatus === 'top_performer' ? 'text-emerald-600' :
+                                                        benchmark.overallStatus === 'above_average' ? 'text-blue-600' :
+                                                            benchmark.overallStatus === 'average' ? 'text-amber-600' :
+                                                                'text-red-600'
+                                                    }`}>
                                                     {benchmark.overallStatus.replace('_', ' ').toUpperCase()}
                                                 </span>
                                             </div>
@@ -602,7 +673,7 @@ export default function CandidateReportPage() {
                                     <div className="p-3 bg-white rounded border border-red-200">
                                         <div className="font-semibold text-red-700 mb-1">🤖 Bot Activity Detected</div>
                                         <div className="text-sm text-red-600 mb-2">
-                                            Risk Score: {submission.botDetectionData.riskScore}% | 
+                                            Risk Score: {submission.botDetectionData.riskScore}% |
                                             Confidence: {submission.botDetectionData.confidence}%
                                         </div>
                                         {submission.botDetectionData.flags && submission.botDetectionData.flags.length > 0 && (
@@ -668,6 +739,118 @@ export default function CandidateReportPage() {
                 </div>
             </div>
 
+            {/* Resume Information Section */}
+            {fullResumeData && (
+                <Card className="bg-white border border-gray-200">
+                    <CardHeader>
+                        <CardTitle className="text-gray-900 flex items-center gap-2">
+                            <FileText className="w-5 h-5 text-primary" />
+                            Candidate Resume Information
+                        </CardTitle>
+                        <CardDescription>
+                            Resume data extracted and confirmed by candidate
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                        {/* Skills */}
+                        {fullResumeData.skills && fullResumeData.skills.length > 0 && (
+                            <div>
+                                <h4 className="font-semibold text-gray-900 mb-3">Skills</h4>
+                                <div className="flex flex-wrap gap-2">
+                                    {fullResumeData.skills.map((skill: string, idx: number) => (
+                                        <Badge key={idx} variant="secondary" className="text-sm">
+                                            {skill}
+                                        </Badge>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Experience */}
+                        {fullResumeData.experience && fullResumeData.experience.length > 0 && (
+                            <div>
+                                <h4 className="font-semibold text-gray-900 mb-3">Work Experience</h4>
+                                <div className="space-y-3">
+                                    {fullResumeData.experience.map((exp: any, idx: number) => (
+                                        <div key={idx} className="border-l-2 border-primary pl-4 py-2">
+                                            <div className="font-medium text-gray-900">{exp.position || 'Position'}</div>
+                                            <div className="text-sm text-gray-600">{exp.company || 'Company'}</div>
+                                            <div className="text-xs text-gray-500">{exp.duration || 'Duration'}</div>
+                                            {exp.description && (
+                                                <div className="text-sm text-gray-700 mt-2">{exp.description}</div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Education */}
+                        {fullResumeData.education && fullResumeData.education.length > 0 && (
+                            <div>
+                                <h4 className="font-semibold text-gray-900 mb-3">Education</h4>
+                                <div className="space-y-2">
+                                    {fullResumeData.education.map((edu: any, idx: number) => (
+                                        <div key={idx} className="text-sm">
+                                            <div className="font-medium text-gray-900">{edu.degree || 'Degree'}</div>
+                                            <div className="text-gray-600">{edu.institution || 'Institution'}</div>
+                                            {edu.field && <div className="text-gray-500">{edu.field}</div>}
+                                            {edu.year && <div className="text-gray-500">{edu.year}</div>}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Summary */}
+                        {fullResumeData.summary && (
+                            <div>
+                                <h4 className="font-semibold text-gray-900 mb-3">Professional Summary</h4>
+                                <p className="text-sm text-gray-700 leading-relaxed">{fullResumeData.summary}</p>
+                            </div>
+                        )}
+
+                        {/* Achievements */}
+                        {fullResumeData.achievements && fullResumeData.achievements.length > 0 && (
+                            <div>
+                                <h4 className="font-semibold text-gray-900 mb-3">Achievements</h4>
+                                <ul className="list-disc list-inside space-y-1 text-sm text-gray-700">
+                                    {fullResumeData.achievements.map((achievement: string, idx: number) => (
+                                        <li key={idx}>{achievement}</li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
+
+                        {/* Certifications */}
+                        {fullResumeData.certifications && fullResumeData.certifications.length > 0 && (
+                            <div>
+                                <h4 className="font-semibold text-gray-900 mb-3">Certifications</h4>
+                                <div className="flex flex-wrap gap-2">
+                                    {fullResumeData.certifications.map((cert: string, idx: number) => (
+                                        <Badge key={idx} variant="outline" className="text-sm">
+                                            {cert}
+                                        </Badge>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* ATS Score */}
+                        {fullResumeData.atsScore > 0 && (
+                            <div className="pt-4 border-t border-gray-200">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-sm font-medium text-gray-700">Resume ATS Score</span>
+                                    <Badge className={fullResumeData.atsScore >= 70 ? 'bg-emerald-100 text-emerald-700' : fullResumeData.atsScore >= 50 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'}>
+                                        {fullResumeData.atsScore}/100
+                                    </Badge>
+                                </div>
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+            )}
+
             {/* Actual Answers Section */}
             <Card className="bg-white border border-gray-200">
                 <CardHeader>
@@ -719,23 +902,21 @@ export default function CandidateReportPage() {
                                                             {question.content.options.map((option: string, optIdx: number) => (
                                                                 <div
                                                                     key={optIdx}
-                                                                    className={`p-2 rounded ${
-                                                                        optIdx === selectedOption
+                                                                    className={`p-2 rounded ${optIdx === selectedOption
                                                                             ? isCorrect
                                                                                 ? 'bg-emerald-100 border-2 border-emerald-500'
                                                                                 : 'bg-red-100 border-2 border-red-500'
                                                                             : optIdx === question.content.correct_answer
-                                                                            ? 'bg-blue-50 border border-blue-300'
-                                                                            : 'bg-white border border-gray-200'
-                                                                    }`}
+                                                                                ? 'bg-blue-50 border border-blue-300'
+                                                                                : 'bg-white border border-gray-200'
+                                                                        }`}
                                                                 >
                                                                     <div className="flex items-center gap-2">
-                                                                        <span className={`font-medium ${
-                                                                            optIdx === selectedOption
+                                                                        <span className={`font-medium ${optIdx === selectedOption
                                                                                 ? isCorrect ? 'text-emerald-700' : 'text-red-700'
                                                                                 : optIdx === question.content.correct_answer
-                                                                                ? 'text-blue-700' : 'text-gray-700'
-                                                                        }`}>
+                                                                                    ? 'text-blue-700' : 'text-gray-700'
+                                                                            }`}>
                                                                             {String.fromCharCode(65 + optIdx)}.
                                                                         </span>
                                                                         <span className={optIdx === selectedOption ? 'font-semibold' : ''}>

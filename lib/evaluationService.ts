@@ -13,7 +13,7 @@ export interface EvaluationResult {
     sectionScores: {
         mcq: { score: number; total: number; correct: number; totalQuestions: number }
         subjective: { score: number; total: number; evaluated: number; totalQuestions: number }
-        coding: { score: number; total: number; testCasesPassed: number; totalTestCases: number }
+        coding: { score: number; total: number; testCasesPassed: number; totalTestCases: number; totalQuestions: number }
     }
     skillScores: Record<string, { score: number; total: number; percentage: number }>
     evaluatedAnswers: Array<{
@@ -35,13 +35,13 @@ export function evaluateSubmission(
 ): EvaluationResult {
     let totalScore = 0
     let totalPossible = 0
-    
+
     const sectionScores = {
         mcq: { score: 0, total: 0, correct: 0, totalQuestions: 0 },
         subjective: { score: 0, total: 0, evaluated: 0, totalQuestions: 0 },
-        coding: { score: 0, total: 0, testCasesPassed: 0, totalTestCases: 0 }
+        coding: { score: 0, total: 0, testCasesPassed: 0, totalTestCases: 0, totalQuestions: 0 }
     }
-    
+
     const skillScores: Record<string, { score: number; total: number }> = {}
     const evaluatedAnswers: EvaluationResult['evaluatedAnswers'] = []
 
@@ -58,9 +58,25 @@ export function evaluateSubmission(
             skillScores[skill].total += question.marks
         }
 
+        // If no answer provided, give 0 score but still count it
+        if (!answer) {
+            console.warn(`No answer found for question ${question.id} (${question.type})`)
+            evaluatedAnswers.push({
+                question_id: question.id,
+                type: question.type,
+                score: 0,
+                max_score: question.marks,
+                feedback: 'No answer provided'
+            })
+            continue
+        }
+
         if (question.type === 'mcq') {
+            const mcqContent = question.content as any
+            const mcqResponse = answer.response as any
+
             // MCQ - exact match with correct answer
-            const isCorrect = answer?.response?.selected_option === question.content.correct_answer
+            const isCorrect = mcqResponse?.selected_option === mcqContent.correct_answer
             const score = isCorrect ? question.marks : 0
             totalScore += score
             sectionScores.mcq.score += score
@@ -79,13 +95,15 @@ export function evaluateSubmission(
                 score,
                 max_score: question.marks,
                 is_correct: isCorrect,
-                feedback: isCorrect 
-                    ? 'Correct!' 
-                    : `Incorrect. The correct answer was: ${question.content.options[question.content.correct_answer]}`
+                feedback: isCorrect
+                    ? 'Correct!'
+                    : `Incorrect. The correct answer was: ${mcqContent.options[mcqContent.correct_answer]}`
             })
         } else if (question.type === 'subjective') {
+            const subjResponse = answer.response as any
+
             // Subjective - simple heuristic scoring (can be enhanced with AI later)
-            const answerText = answer?.response?.text || ''
+            const answerText = subjResponse?.text || ''
             sectionScores.subjective.total += question.marks
             sectionScores.subjective.totalQuestions += 1
 
@@ -114,21 +132,24 @@ export function evaluateSubmission(
                 type: 'subjective',
                 score,
                 max_score: question.marks,
-                feedback: answerText.trim().length < 10 
-                    ? 'No answer provided or answer too short.' 
+                feedback: answerText.trim().length < 10
+                    ? 'No answer provided or answer too short.'
                     : 'Answer evaluated based on length and content. (AI evaluation can be added later)'
             })
         } else if (question.type === 'coding') {
+            const codingContent = question.content as any
+            const codingResponse = answer.response as any
+
             // Coding - check execution results if available
             sectionScores.coding.total += question.marks
             sectionScores.coding.totalQuestions += 1
 
-            const code = answer?.response?.code || ''
-            const executionResults = answer?.response?.execution_results || []
-            
+            const code = codingResponse?.code || ''
+            const executionResults = codingResponse?.execution_results || []
+
             let score = 0
             let testCasesPassed = 0
-            const totalTestCases = question.content.test_cases?.length || 0
+            const totalTestCases = codingContent.test_cases?.length || 0
 
             if (code.trim().length < 20) {
                 score = 0
@@ -197,7 +218,8 @@ export function evaluateSubmission(
                 score: sectionScores.coding.score,
                 total: sectionScores.coding.total,
                 testCasesPassed: sectionScores.coding.testCasesPassed,
-                totalTestCases: sectionScores.coding.totalTestCases
+                totalTestCases: sectionScores.coding.totalTestCases,
+                totalQuestions: sectionScores.coding.totalQuestions
             }
         },
         skillScores: skillScoresWithPercentage,
@@ -210,19 +232,107 @@ export function evaluateSubmission(
  */
 export async function evaluateAndSaveSubmission(
     submission: CandidateSubmission,
-    questions: Question[]
+    questions: Question[],
+    passingPercentage?: number
 ): Promise<EvaluationResult> {
-    const evaluation = evaluateSubmission(submission, questions)
-    
+    let evaluation: EvaluationResult;
+
+    // Try AI evaluation first via API
+    try {
+        const response = await fetch('/api/evaluate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                submission: {
+                    answers: Object.values(submission.answers || {}),
+                    job_title: submission.jobTitle || 'Assessment',
+                    candidate_name: submission.candidateInfo?.name
+                },
+                questions
+            })
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.success && data.data) {
+            // Map API response to EvaluationResult format
+            const apiData = data.data;
+
+            // Reconstruct section scores from evaluated answers since API doesn't return them directly
+            const sectionScores = {
+                mcq: { score: 0, total: 0, correct: 0, totalQuestions: 0 },
+                subjective: { score: 0, total: 0, evaluated: 0, totalQuestions: 0 },
+                coding: { score: 0, total: 0, testCasesPassed: 0, totalTestCases: 0, totalQuestions: 0 }
+            };
+
+            const skillScores: Record<string, { score: number; total: number; percentage: number }> = {};
+
+            // Process skill analysis from API
+            if (apiData.skill_analysis) {
+                apiData.skill_analysis.forEach((s: any) => {
+                    skillScores[s.skill] = {
+                        score: s.score,
+                        total: s.total,
+                        percentage: s.percentage
+                    };
+                });
+            }
+
+            // Process answers to build section scores
+            questions.forEach(q => {
+                const evaluated = apiData.evaluated_answers.find((a: any) => a.question_id === q.id);
+                const score = evaluated?.score || 0;
+                const marks = q.marks || 0;
+
+                if (q.type === 'mcq') {
+                    sectionScores.mcq.total += marks;
+                    sectionScores.mcq.totalQuestions++;
+                    sectionScores.mcq.score += score;
+                    if (evaluated?.is_correct) sectionScores.mcq.correct++;
+                } else if (q.type === 'subjective') {
+                    sectionScores.subjective.total += marks;
+                    sectionScores.subjective.totalQuestions++;
+                    sectionScores.subjective.score += score;
+                    sectionScores.subjective.evaluated++;
+                } else if (q.type === 'coding') {
+                    sectionScores.coding.total += marks;
+                    sectionScores.coding.totalQuestions++;
+                    sectionScores.coding.score += score;
+                    // API might not return test cases passed detail, strictly speaking, but we can infer or leave 0
+                }
+            });
+
+            evaluation = {
+                totalScore: apiData.total_score,
+                totalPossible: apiData.total_possible,
+                percentage: apiData.percentage,
+                sectionScores,
+                skillScores,
+                evaluatedAnswers: apiData.evaluated_answers
+            };
+        } else {
+            // Fallback if API returns error
+            console.warn('AI evaluation API failed, falling back to heuristics:', data.error);
+            evaluation = evaluateSubmission(submission, questions);
+        }
+    } catch (error) {
+        console.warn('Network error calling AI evaluation, falling back to heuristics:', error);
+        evaluation = evaluateSubmission(submission, questions);
+    }
+
     // Import here to avoid circular dependency
     const { updateSubmissionScores } = require('./submissionService')
-    await updateSubmissionScores(submission.id, {
-        totalScore: evaluation.totalScore,
-        totalPossible: evaluation.totalPossible,
-        percentage: evaluation.percentage,
-        sectionScores: evaluation.sectionScores,
-        skillScores: evaluation.skillScores
-    })
-    
+    await updateSubmissionScores(
+        submission.id,
+        {
+            totalScore: evaluation.totalScore,
+            totalPossible: evaluation.totalPossible,
+            percentage: evaluation.percentage,
+            sectionScores: evaluation.sectionScores,
+            skillScores: evaluation.skillScores
+        },
+        passingPercentage
+    )
+
     return evaluation
 }

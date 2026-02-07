@@ -20,11 +20,11 @@ export function generatePDFReportHTML(
     questions: Array<{ id: string; type: string; content?: any }>,
     options: PDFReportOptions = {}
 ): string {
-    const candidateName = submission.candidateInfo.name
-    const candidateEmail = submission.candidateInfo.email
-    const jobTitle = submission.jobTitle
-    const company = submission.company
-    const submittedAt = new Date(submission.submittedAt).toLocaleString()
+    const candidateName = submission.candidateInfo?.name || 'Unknown Candidate'
+    const candidateEmail = submission.candidateInfo?.email || 'N/A'
+    const jobTitle = submission.jobTitle || 'N/A'
+    const company = submission.company || 'N/A'
+    const submittedAt = submission.submittedAt ? new Date(submission.submittedAt).toLocaleString() : 'N/A'
     const percentage = submission.scores?.percentage || 0
     const totalScore = submission.scores?.totalScore || 0
     const totalPossible = submission.scores?.totalPossible || 0
@@ -183,7 +183,7 @@ export function generatePDFReportHTML(
             <div class="info-label">Status</div>
             <div class="info-value">
                 <span class="badge ${percentage >= 50 ? 'badge-pass' : 'badge-fail'}">
-                    ${submission.status.toUpperCase()}
+                    ${(submission.status || 'pending').toUpperCase()}
                 </span>
             </div>
         </div>
@@ -210,26 +210,26 @@ export function generatePDFReportHTML(
             <tbody>
                 <tr>
                     <td>MCQ</td>
-                    <td>${submission.scores.sectionScores.mcq.score}</td>
-                    <td>${submission.scores.sectionScores.mcq.total}</td>
-                    <td>${submission.scores.sectionScores.mcq.total > 0 
-                        ? Math.round((submission.scores.sectionScores.mcq.score / submission.scores.sectionScores.mcq.total) * 100) 
+                    <td>${submission.scores.sectionScores.mcq?.score || 0}</td>
+                    <td>${submission.scores.sectionScores.mcq?.total || 0}</td>
+                    <td>${submission.scores.sectionScores.mcq?.total > 0 
+                        ? Math.round(((submission.scores.sectionScores.mcq?.score || 0) / submission.scores.sectionScores.mcq.total) * 100) 
                         : 0}%</td>
                 </tr>
                 <tr>
                     <td>Subjective</td>
-                    <td>${submission.scores.sectionScores.subjective.score}</td>
-                    <td>${submission.scores.sectionScores.subjective.total}</td>
-                    <td>${submission.scores.sectionScores.subjective.total > 0 
-                        ? Math.round((submission.scores.sectionScores.subjective.score / submission.scores.sectionScores.subjective.total) * 100) 
+                    <td>${submission.scores.sectionScores.subjective?.score || 0}</td>
+                    <td>${submission.scores.sectionScores.subjective?.total || 0}</td>
+                    <td>${submission.scores.sectionScores.subjective?.total > 0 
+                        ? Math.round(((submission.scores.sectionScores.subjective?.score || 0) / submission.scores.sectionScores.subjective.total) * 100) 
                         : 0}%</td>
                 </tr>
                 <tr>
                     <td>Coding</td>
-                    <td>${submission.scores.sectionScores.coding.score}</td>
-                    <td>${submission.scores.sectionScores.coding.total}</td>
-                    <td>${submission.scores.sectionScores.coding.total > 0 
-                        ? Math.round((submission.scores.sectionScores.coding.score / submission.scores.sectionScores.coding.total) * 100) 
+                    <td>${submission.scores.sectionScores.coding?.score || 0}</td>
+                    <td>${submission.scores.sectionScores.coding?.total || 0}</td>
+                    <td>${submission.scores.sectionScores.coding?.total > 0 
+                        ? Math.round(((submission.scores.sectionScores.coding?.score || 0) / submission.scores.sectionScores.coding.total) * 100) 
                         : 0}%</td>
                 </tr>
             </tbody>
@@ -255,7 +255,7 @@ export function generatePDFReportHTML(
     <div class="section">
         <div class="section-title">Answer Details</div>
         ${questions.map((q, idx) => {
-            const answer = submission.answers[q.id]
+            const answer = submission.answers?.[q.id]
             if (!answer) return ''
             
             let answerText = ''

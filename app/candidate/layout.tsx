@@ -1,11 +1,13 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { Brain, Search, FileText, User, LogOut, Bell, Briefcase } from "lucide-react"
+import { Zap, Search, FileText, User, LogOut, Bell, Briefcase } from "lucide-react"
 import { useAuth } from "@/contexts/AuthContext"
+import { supabase } from "@/lib/supabase"
 
 const sidebarItems = [
     {
@@ -15,8 +17,13 @@ const sidebarItems = [
     },
     {
         title: "My Applications",
-        href: "/candidate/achievements", // Reusing this route for now, but keeping professional name
+        href: "/candidate/achievements",
         icon: Briefcase
+    },
+    {
+        title: "My Resume",
+        href: "/candidate/resume",
+        icon: FileText
     },
     {
         title: "My Profile",
@@ -31,20 +38,67 @@ export default function CandidateLayout({
     children: React.ReactNode
 }) {
     const pathname = usePathname()
-    const { signOut } = useAuth()
+    const { signOut, user } = useAuth()
+    const [avatarUrl, setAvatarUrl] = useState("")
+
+    useEffect(() => {
+        if (!user) return
+
+        const loadAvatar = async () => {
+            // 1. Try Local Storage (Demo Fallback) - Highest priority for immediate updates
+            const localAvatar = localStorage.getItem(`avatar_${user.id}`)
+            if (localAvatar) {
+                setAvatarUrl(localAvatar)
+                return
+            }
+
+            // 2. Try User Metadata
+            if (user.user_metadata?.avatar_url) {
+                setAvatarUrl(user.user_metadata.avatar_url)
+            }
+
+            // 3. Try Supabase Profile (Background refresh)
+            const { data } = await supabase
+                .from('user_profiles')
+                .select('avatar_url')
+                .eq('id', user.id)
+                .single()
+
+            if (data?.avatar_url) {
+                setAvatarUrl(data.avatar_url)
+            }
+        }
+
+        loadAvatar()
+
+        // Listen for storage events to update avatar immediately if changed in another tab/component
+        const handleStorageChange = () => {
+            const localAvatar = localStorage.getItem(`avatar_${user.id}`)
+            if (localAvatar) setAvatarUrl(localAvatar)
+        }
+
+        window.addEventListener('storage', handleStorageChange)
+        // Custom event for same-window updates
+        window.addEventListener('avatar-updated', handleStorageChange)
+
+        return () => {
+            window.removeEventListener('storage', handleStorageChange)
+            window.removeEventListener('avatar-updated', handleStorageChange)
+        }
+    }, [user])
 
     return (
-        <div className="min-h-screen bg-gray-50 flex">
-            {/* ========== PROFESSIONAL SIDEBAR ========== */}
-            <aside className="fixed left-0 top-0 bottom-0 w-64 bg-white border-r border-gray-200 z-50 flex flex-col shadow-sm">
+        <div className="min-h-screen bg-[#0A0A0A] flex">
+            {/* ========== DARK SIDEBAR ========== */}
+            <aside className="fixed left-0 top-0 bottom-0 w-64 bg-[#0A0A0A] border-r border-white/5 z-50 flex flex-col">
 
                 {/* Brand */}
-                <div className="h-16 flex items-center px-6 border-b border-gray-100">
-                    <Link href="/" className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded bg-indigo-600 flex items-center justify-center text-white">
-                            <Brain className="w-5 h-5" />
+                <div className="h-16 flex items-center px-6 border-b border-white/5">
+                    <Link href="/" className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl overflow-hidden">
+                            <img src="/logo.png" alt="AssessAI" className="w-full h-full object-cover" />
                         </div>
-                        <span className="text-xl font-bold text-gray-900 tracking-tight">
+                        <span className="text-lg font-semibold text-white tracking-tight">
                             AssessAI
                         </span>
                     </Link>
@@ -52,8 +106,8 @@ export default function CandidateLayout({
 
                 {/* Nav Items */}
                 <nav className="flex-1 py-6 px-3 space-y-1">
-                    <div className="px-3 mb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                        Main
+                    <div className="px-3 mb-4 text-xs font-medium text-white/30 uppercase tracking-wider">
+                        Main Menu
                     </div>
                     {sidebarItems.map((item) => {
                         const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
@@ -62,12 +116,12 @@ export default function CandidateLayout({
                         return (
                             <Link key={item.href} href={item.href}>
                                 <div className={cn(
-                                    "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                                    "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all",
                                     isActive
-                                        ? "bg-indigo-50 text-indigo-700"
-                                        : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                                        ? "bg-white/10 text-white"
+                                        : "text-white/60 hover:bg-white/5 hover:text-white"
                                 )}>
-                                    <Icon className={cn("w-5 h-5", isActive ? "text-indigo-600" : "text-gray-400 group-hover:text-gray-500")} />
+                                    <Icon className={cn("w-5 h-5", isActive ? "text-white" : "text-white/40")} />
                                     <span>{item.title}</span>
                                 </div>
                             </Link>
@@ -76,12 +130,12 @@ export default function CandidateLayout({
                 </nav>
 
                 {/* Footer */}
-                <div className="p-4 border-t border-gray-200 bg-gray-50/50">
+                <div className="p-4 border-t border-white/5">
                     <Button
                         variant="outline"
                         size="sm"
                         onClick={() => signOut()}
-                        className="w-full justify-start gap-3 text-gray-600 border-gray-300 hover:bg-white hover:text-red-600 transition-colors"
+                        className="w-full justify-center gap-2 bg-transparent border-white/10 text-white/60 hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/20 transition-all"
                     >
                         <LogOut className="w-4 h-4" />
                         Sign Out
@@ -92,17 +146,21 @@ export default function CandidateLayout({
             {/* ========== MAIN CONTENT ========== */}
             <main className="flex-1 ml-64 min-h-screen">
                 {/* Top Header */}
-                <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-8 sticky top-0 z-40">
-                    <h2 className="text-lg font-semibold text-gray-800">
+                <header className="h-16 bg-[#0A0A0A] border-b border-white/5 flex items-center justify-between px-8 sticky top-0 z-40">
+                    <h2 className="text-lg font-medium text-white">
                         Candidate Portal
                     </h2>
                     <div className="flex items-center gap-4">
-                        <Button variant="ghost" size="icon" className="text-gray-400 relative">
+                        <Button variant="ghost" size="icon" className="text-white/40 hover:text-white hover:bg-white/5 relative">
                             <Bell className="w-5 h-5" />
-                            <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border border-white" />
+                            <span className="absolute top-2 right-2 w-2 h-2 bg-white rounded-full" />
                         </Button>
-                        <div className="w-8 h-8 rounded-full bg-gray-200 border border-gray-300 overflow-hidden">
-                            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Alex" alt="User" />
+                        <div className="w-8 h-8 rounded-full bg-white/10 border border-white/20 overflow-hidden">
+                            <img
+                                src={avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.email || 'User'}`}
+                                alt="User"
+                                className="w-full h-full object-cover"
+                            />
                         </div>
                     </div>
                 </header>
@@ -114,3 +172,5 @@ export default function CandidateLayout({
         </div>
     )
 }
+
+

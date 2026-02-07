@@ -118,6 +118,31 @@ CREATE TABLE IF NOT EXISTS user_profiles (
     role VARCHAR(20) DEFAULT 'candidate' CHECK (role IN ('candidate', 'recruiter', 'admin')),
     company VARCHAR(255),
     avatar_url TEXT,
+    has_resume BOOLEAN DEFAULT false,
+    resume_uploaded_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- ============================================
+-- RESUME DATA TABLE (stores parsed resume information)
+-- ============================================
+CREATE TABLE IF NOT EXISTS resume_data (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE UNIQUE,
+    resume_url TEXT,
+    ats_score DECIMAL(5, 2),
+    skills TEXT[] DEFAULT '{}',
+    analysis JSONB DEFAULT '{}',
+    personal_info JSONB DEFAULT '{}',
+    experience JSONB DEFAULT '[]',
+    education JSONB DEFAULT '[]',
+    summary TEXT,
+    achievements TEXT[] DEFAULT '{}',
+    certifications TEXT[] DEFAULT '{}',
+    languages TEXT[] DEFAULT '{}',
+    projects TEXT[] DEFAULT '{}',
+    raw_data JSONB,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -134,6 +159,7 @@ CREATE INDEX IF NOT EXISTS idx_submissions_assessment ON submissions(assessment_
 CREATE INDEX IF NOT EXISTS idx_submissions_status ON submissions(status);
 CREATE INDEX IF NOT EXISTS idx_answers_submission ON answers(submission_id);
 CREATE INDEX IF NOT EXISTS idx_scores_submission ON scores(submission_id);
+CREATE INDEX IF NOT EXISTS idx_resume_data_user ON resume_data(user_id);
 
 -- ============================================
 -- ROW LEVEL SECURITY (RLS)
@@ -145,6 +171,7 @@ ALTER TABLE submissions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE answers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE scores ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE resume_data ENABLE ROW LEVEL SECURITY;
 
 -- Jobs: Recruiters can manage their own jobs, candidates can view active jobs
 DROP POLICY IF EXISTS "Recruiters can manage own jobs" ON jobs;
@@ -315,6 +342,29 @@ CREATE POLICY "Users can update own profile" ON user_profiles
 DROP POLICY IF EXISTS "Users can insert own profile" ON user_profiles;
 CREATE POLICY "Users can insert own profile" ON user_profiles
     FOR INSERT WITH CHECK (id = auth.uid());
+
+-- Resume Data: Users can manage their own resume data
+DROP POLICY IF EXISTS "Users can view own resume" ON resume_data;
+CREATE POLICY "Users can view own resume" ON resume_data
+    FOR SELECT USING (user_id = auth.uid());
+
+DROP POLICY IF EXISTS "Users can update own resume" ON resume_data;
+CREATE POLICY "Users can update own resume" ON resume_data
+    FOR UPDATE USING (user_id = auth.uid());
+
+DROP POLICY IF EXISTS "Users can insert own resume" ON resume_data;
+CREATE POLICY "Users can insert own resume" ON resume_data
+    FOR INSERT WITH CHECK (user_id = auth.uid());
+
+DROP POLICY IF EXISTS "Recruiters can view candidate resumes" ON resume_data;
+CREATE POLICY "Recruiters can view candidate resumes" ON resume_data
+    FOR SELECT USING (
+        EXISTS (
+            SELECT 1 FROM user_profiles
+            WHERE user_profiles.id = auth.uid()
+            AND user_profiles.role IN ('recruiter', 'admin')
+        )
+    );
 
 -- ============================================
 -- FUNCTIONS

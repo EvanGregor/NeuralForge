@@ -135,7 +135,7 @@ export default function Dashboard() {
       description: "Find opportunities that match your skills",
       icon: Target,
       progress: 0,
-      color: "red",
+      color: "amber",
       completed: 0,
       total: 10,
       route: "/jobs",
@@ -146,10 +146,10 @@ export default function Dashboard() {
       description: "View your completed assessments",
       icon: Award,
       progress: 0,
-      color: "red",
+      color: "amber",
       completed: 0,
       total: 10,
-      route: "/dashboard",
+      route: "/candidate/achievements",
     },
   ]
 
@@ -157,25 +157,25 @@ export default function Dashboard() {
   // Show loading state
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+      <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
         <div className="text-center">
-          <div className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center mx-auto mb-4">
-            <Brain className="w-5 h-5 text-white animate-pulse" />
+          <div className="w-8 h-8 bg-[#E8C547]/10 rounded-lg flex items-center justify-center mx-auto mb-4 border border-[#E8C547]/20">
+            <Brain className="w-5 h-5 text-[#E8C547] animate-pulse" />
           </div>
-          <p className="text-white">Loading...</p>
+          <p className="text-white/60">Loading...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-900">
+    <div className="min-h-screen bg-[#0A0A0A]">
       {/* Header */}
-      <header className="border-b bg-gray-900/95 backdrop-blur-sm sticky top-0 z-50 shadow-sm">
+      <header className="border-b border-white/10 bg-[#0A0A0A]/95 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center">
-              <Brain className="w-5 h-5 text-white" />
+            <div className="w-8 h-8 bg-[#E8C547]/10 rounded-lg flex items-center justify-center border border-[#E8C547]/20">
+              <Brain className="w-5 h-5 text-[#E8C547]" />
             </div>
             <span className="text-2xl font-bold text-white">
               AssessAI
@@ -186,43 +186,42 @@ export default function Dashboard() {
             <div className="relative" ref={dropdownRef}>
               <button
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="flex items-center space-x-3 hover:bg-gray-800 rounded-lg p-2 transition-colors"
+                className="flex items-center space-x-3 hover:bg-white/5 rounded-lg p-2 transition-colors"
               >
-                <Avatar>
+                <Avatar className="border border-white/10">
                   <AvatarImage src={user.avatar || ""} alt={user.name} />
-                  <AvatarFallback className="bg-red-600 text-white font-semibold">
+                  <AvatarFallback className="bg-[#E8C547]/10 text-[#E8C547] font-semibold">
                     {getInitials(user.name)}
                   </AvatarFallback>
                 </Avatar>
-                <div className="hidden md:block">
+                <div className="hidden md:block text-left">
                   <p className="text-sm font-medium text-white">{user.name}</p>
-                  <p className="text-xs text-gray-300">{user.role}</p>
+                  <p className="text-xs text-white/50">{user.role}</p>
                 </div>
-                <ChevronDown className="w-4 h-4 text-gray-300" />
+                <ChevronDown className="w-4 h-4 text-white/50" />
               </button>
 
               {isDropdownOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+                <div className="absolute right-0 mt-2 w-48 bg-[#1A1A1A] rounded-lg shadow-xl border border-white/10 z-50">
                   <div className="py-2">
-                    <div className="px-4 py-2 border-b border-gray-100">
-                      <p className="text-sm font-medium text-gray-800">{user.name}</p>
-                      <p className="text-xs text-gray-500">{user.email}</p>
+                    <div className="px-4 py-2 border-b border-white/10">
+                      <p className="text-sm font-medium text-white">{user.name}</p>
+                      <p className="text-xs text-white/50">{user.email}</p>
                     </div>
                     <button
                       onClick={() => {
-                        console.log("Edit Profile clicked")
-                        setIsDropdownOpen(false) // Close dropdown first
+                        setIsDropdownOpen(false)
                         router.push("/edit-profile")
                       }}
-                      className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-2"
+                      className="w-full px-4 py-2 text-left text-sm text-white/80 hover:bg-white/5 flex items-center space-x-2"
                     >
                       <User className="w-4 h-4" />
                       <span>Edit Profile</span>
                     </button>
-                    <div className="border-t border-gray-100 mt-1">
+                    <div className="border-t border-white/10 mt-1">
                       <button
                         onClick={signOut}
-                        className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-50 flex items-center space-x-2"
+                        className="w-full px-4 py-2 text-left text-sm text-red-400 hover:bg-white/5 flex items-center space-x-2"
                       >
                         <LogOut className="w-4 h-4" />
                         <span>Logout</span>
@@ -240,7 +239,7 @@ export default function Dashboard() {
         {/* Welcome Section */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-white mb-2">Welcome, {user.name}!</h1>
-          <p className="text-gray-300">Continue your journey to become a successful {user.role}</p>
+          <p className="text-white/60">Continue your journey to become a successful {user.role}</p>
         </div>
 
         {/* Admin Layout - Special 2 Column Layout */}
@@ -249,30 +248,30 @@ export default function Dashboard() {
             {/* Left Column - Resume Score + Salary Prediction */}
             <div className="space-y-6">
               {/* Resume Score Card */}
-              <Card className="border-gray-200 bg-white">
+              <Card className="bg-white/5 border-white/10">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-gray-600">Resume Score</p>
-                      <p className="text-2xl font-bold text-black">{stats.resumeScore}%</p>
+                      <p className="text-sm text-white/60">Resume Score</p>
+                      <p className="text-2xl font-bold text-white">{stats.resumeScore}%</p>
                     </div>
-                    <Star className="w-8 h-8 text-red-600" />
+                    <Star className="w-8 h-8 text-[#E8C547]" />
                   </div>
                 </CardContent>
               </Card>
 
               {/* Salary Prediction */}
-              <Card className="bg-black text-white">
+              <Card className="bg-gradient-to-br from-[#E8C547]/20 to-black border-white/10">
                 <CardHeader className="pb-4">
-                  <CardTitle className="text-lg">Salary Prediction</CardTitle>
-                  <CardDescription className="text-gray-300">Based on your profile</CardDescription>
+                  <CardTitle className="text-lg text-white">Salary Prediction</CardTitle>
+                  <CardDescription className="text-white/60">Based on your profile</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="text-center">
-                    <p className="text-3xl font-bold">₹8.5L - ₹12L</p>
-                    <p className="text-sm text-gray-300 mt-1">Expected Annual Package</p>
+                    <p className="text-3xl font-bold text-[#E8C547]">₹8.5L - ₹12L</p>
+                    <p className="text-sm text-white/60 mt-1">Expected Annual Package</p>
                     <Link href="/jobs">
-                      <Button className="w-full mt-4 bg-white text-black hover:bg-gray-100">View Details</Button>
+                      <Button className="w-full mt-4 bg-[#E8C547] text-black hover:bg-[#E8C547]/90">View Details</Button>
                     </Link>
                   </div>
                 </CardContent>
@@ -282,25 +281,25 @@ export default function Dashboard() {
             {/* Right Column - Quick Actions + Recent Activity */}
             <div className="space-y-6">
               {/* Quick Actions */}
-              <Card className="bg-white border-gray-200">
+              <Card className="bg-white/5 border-white/10">
                 <CardHeader className="pb-4">
-                  <CardTitle className="text-lg text-gray-800">Quick Actions</CardTitle>
+                  <CardTitle className="text-lg text-white">Quick Actions</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <Link href="/jobs">
-                    <Button className="w-full justify-start bg-transparent border-gray-300 text-gray-700 hover:bg-gray-50" variant="outline">
+                    <Button className="w-full justify-start bg-transparent border-white/10 text-white hover:bg-white/5 hover:text-white" variant="outline">
                       <Upload className="w-4 h-4 mr-2" />
                       Upload Resume
                     </Button>
                   </Link>
                   <Link href="/jobs">
-                    <Button className="w-full justify-start bg-transparent border-gray-300 text-gray-700 hover:bg-gray-50" variant="outline">
+                    <Button className="w-full justify-start bg-transparent border-white/10 text-white hover:bg-white/5 hover:text-white" variant="outline">
                       <Clock className="w-4 h-4 mr-2" />
                       Take Mock Test
                     </Button>
                   </Link>
                   <Link href="/jobs">
-                    <Button className="w-full justify-start bg-transparent border-gray-300 text-gray-700 hover:bg-gray-50" variant="outline">
+                    <Button className="w-full justify-start bg-transparent border-white/10 text-white hover:bg-white/5 hover:text-white" variant="outline">
                       <TrendingUp className="w-4 h-4 mr-2" />
                       View Salary Insights
                     </Button>
@@ -312,50 +311,50 @@ export default function Dashboard() {
         ) : (
           /* Regular User Layout - All Stats */
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            <Card className="border-gray-200 bg-white">
+            <Card className="bg-white/5 border-white/10">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-600">Overall Progress</p>
-                    <p className="text-2xl font-bold text-black">{stats.overallProgress}%</p>
+                    <p className="text-sm text-white/60">Overall Progress</p>
+                    <p className="text-2xl font-bold text-white">{stats.overallProgress}%</p>
                   </div>
-                  <Target className="w-8 h-8 text-red-600" />
+                  <Target className="w-8 h-8 text-[#E8C547]" />
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="border-gray-200 bg-white">
+            <Card className="bg-white/5 border-white/10">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-600">Tests Completed</p>
-                    <p className="text-2xl font-bold text-black">{stats.testsCompleted}</p>
+                    <p className="text-sm text-white/60">Tests Completed</p>
+                    <p className="text-2xl font-bold text-white">{stats.testsCompleted}</p>
                   </div>
-                  <Award className="w-8 h-8 text-red-600" />
+                  <Award className="w-8 h-8 text-[#E8C547]" />
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="border-gray-200 bg-white">
+            <Card className="bg-white/5 border-white/10">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-600">Skills Improved</p>
-                    <p className="text-2xl font-bold text-black">{stats.skillsImproved}</p>
+                    <p className="text-sm text-white/60">Skills Improved</p>
+                    <p className="text-2xl font-bold text-white">{stats.skillsImproved}</p>
                   </div>
-                  <TrendingUp className="w-8 h-8 text-red-600" />
+                  <TrendingUp className="w-8 h-8 text-[#E8C547]" />
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="border-gray-200 bg-white">
+            <Card className="bg-white/5 border-white/10">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-600">Resume Score</p>
-                    <p className="text-2xl font-bold text-black">{stats.resumeScore}%</p>
+                    <p className="text-sm text-white/60">Resume Score</p>
+                    <p className="text-2xl font-bold text-white">{stats.resumeScore}%</p>
                   </div>
-                  <Star className="w-8 h-8 text-red-600" />
+                  <Star className="w-8 h-8 text-[#E8C547]" />
                 </div>
               </CardContent>
             </Card>
@@ -373,17 +372,17 @@ export default function Dashboard() {
                   {modules.map((module) => {
                     const IconComponent = module.icon
                     return (
-                      <Card key={module.id} className="hover:shadow-lg hover:-translate-y-2 transition-all duration-300 cursor-pointer border-gray-200 bg-white">
+                      <Card key={module.id} className="bg-white/5 border-white/10 hover:border-[#E8C547]/50 transition-all duration-300 cursor-pointer group">
                         <CardHeader className="pb-3">
                           <div className="flex items-center justify-between">
-                            <IconComponent className="w-8 h-8 text-red-600" />
+                            <IconComponent className="w-8 h-8 text-[#E8C547]" />
                           </div>
-                          <CardTitle className="text-lg text-gray-800">{module.title}</CardTitle>
-                          <CardDescription className="text-gray-600">{module.description}</CardDescription>
+                          <CardTitle className="text-lg text-white group-hover:text-[#E8C547] transition-colors">{module.title}</CardTitle>
+                          <CardDescription className="text-white/50">{module.description}</CardDescription>
                         </CardHeader>
                         <CardContent>
                           <Link href={module.route}>
-                            <Button className="w-full mt-4 bg-black hover:bg-gray-800 text-white" variant="default">
+                            <Button className="w-full mt-4 bg-white/10 hover:bg-white/20 text-white" variant="default">
                               Continue Learning
                             </Button>
                           </Link>
@@ -397,25 +396,25 @@ export default function Dashboard() {
               {/* Sidebar */}
               <div className="flex flex-col space-y-4">
                 {/* Quick Actions */}
-                <Card className="bg-white border-gray-200 hover:shadow-lg transition-shadow duration-300 h-full">
+                <Card className="bg-white/5 border-white/10 h-full">
                   <CardHeader className="pb-3">
-                    <CardTitle className="text-lg text-gray-800">Quick Actions</CardTitle>
+                    <CardTitle className="text-lg text-white">Quick Actions</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-2">
                     <Link href="/jobs">
-                      <Button className="w-full justify-start bg-transparent border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-red-300 transition-colors" variant="outline">
+                      <Button className="w-full justify-start bg-transparent border-white/10 text-white hover:bg-white/5 hover:text-white hover:border-[#E8C547]/50 transition-all" variant="outline">
                         <Upload className="w-4 h-4 mr-2" />
                         Upload Resume
                       </Button>
                     </Link>
                     <Link href="/modules/aptitude">
-                      <Button className="w-full justify-start bg-transparent border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-red-300 transition-colors" variant="outline">
+                      <Button className="w-full justify-start bg-transparent border-white/10 text-white hover:bg-white/5 hover:text-white hover:border-[#E8C547]/50 transition-all" variant="outline">
                         <Clock className="w-4 h-4 mr-2" />
                         Take Mock Test
                       </Button>
                     </Link>
                     <Link href="/jobs">
-                      <Button className="w-full justify-start bg-transparent border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-red-300 transition-colors" variant="outline">
+                      <Button className="w-full justify-start bg-transparent border-white/10 text-white hover:bg-white/5 hover:text-white hover:border-[#E8C547]/50 transition-all" variant="outline">
                         <TrendingUp className="w-4 h-4 mr-2" />
                         View Salary Insights
                       </Button>
@@ -424,10 +423,10 @@ export default function Dashboard() {
                 </Card>
 
                 {/* Skills Card */}
-                <Card className="bg-white border-gray-200 hover:shadow-lg transition-shadow duration-300 h-full">
+                <Card className="bg-white/5 border-white/10 h-full">
                   <CardHeader className="pb-3">
-                    <CardTitle className="text-lg text-gray-800">Your Skills</CardTitle>
-                    <CardDescription className="text-gray-600 text-sm">
+                    <CardTitle className="text-lg text-white">Your Skills</CardTitle>
+                    <CardDescription className="text-white/50 text-sm">
                       Skills extracted from your resume
                     </CardDescription>
                   </CardHeader>
@@ -436,12 +435,12 @@ export default function Dashboard() {
                       <div className="space-y-3">
                         <div className="flex flex-wrap gap-2">
                           {resumeData.skills.slice(0, 6).map((skill, index) => (
-                            <Badge key={index} variant="secondary" className="text-xs">
+                            <Badge key={index} variant="secondary" className="bg-white/10 text-white hover:bg-white/20 text-xs text-white/70">
                               {skill}
                             </Badge>
                           ))}
                           {resumeData.skills.length > 6 && (
-                            <Badge variant="outline" className="text-xs">
+                            <Badge variant="outline" className="text-xs border-white/10 text-white/50">
                               +{resumeData.skills.length - 6} more
                             </Badge>
                           )}
@@ -449,9 +448,9 @@ export default function Dashboard() {
                       </div>
                     ) : (
                       <div className="text-center py-3">
-                        <p className="text-sm text-gray-500 mb-2">No skills detected yet</p>
+                        <p className="text-sm text-white/40 mb-2">No skills detected yet</p>
                         <Link href="/jobs">
-                          <Button size="sm" variant="outline">
+                          <Button size="sm" variant="outline" className="border-white/10 text-white hover:bg-white/5">
                             Upload Resume
                           </Button>
                         </Link>
@@ -461,17 +460,17 @@ export default function Dashboard() {
                 </Card>
 
                 {/* Salary Prediction */}
-                <Card className="bg-black text-white hover:shadow-xl transition-shadow duration-300 h-full">
+                <Card className="bg-gradient-to-br from-[#E8C547]/20 to-black border-white/10 h-full">
                   <CardHeader className="pb-3">
-                    <CardTitle className="text-lg">Salary Prediction</CardTitle>
-                    <CardDescription className="text-gray-300 text-sm">Based on your profile</CardDescription>
+                    <CardTitle className="text-lg text-white">Salary Prediction</CardTitle>
+                    <CardDescription className="text-white/60 text-sm">Based on your profile</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="text-center">
-                      <p className="text-2xl font-bold">₹8.5L - ₹12L</p>
-                      <p className="text-sm text-gray-300 mt-1">Expected Annual Package</p>
+                      <p className="text-2xl font-bold text-[#E8C547]">₹8.5L - ₹12L</p>
+                      <p className="text-sm text-white/50 mt-1">Expected Annual Package</p>
                       <Link href="/jobs">
-                        <Button className="w-full mt-3 bg-white text-black hover:bg-gray-100">View Details</Button>
+                        <Button className="w-full mt-3 bg-[#E8C547] text-black hover:bg-[#E8C547]/90">View Details</Button>
                       </Link>
                     </div>
                   </CardContent>
@@ -489,17 +488,17 @@ export default function Dashboard() {
               {modules.map((module) => {
                 const IconComponent = module.icon
                 return (
-                  <Card key={module.id} className="hover:shadow-lg hover:-translate-y-2 transition-all duration-300 cursor-pointer border-gray-200 bg-white">
+                  <Card key={module.id} className="bg-white/5 border-white/10 hover:border-[#E8C547]/50 transition-all duration-300 cursor-pointer group">
                     <CardHeader className="pb-3">
                       <div className="flex items-center justify-between">
-                        <IconComponent className="w-8 h-8 text-red-600" />
+                        <IconComponent className="w-8 h-8 text-[#E8C547]" />
                       </div>
-                      <CardTitle className="text-lg text-gray-800">{module.title}</CardTitle>
-                      <CardDescription className="text-gray-600">{module.description}</CardDescription>
+                      <CardTitle className="text-lg text-white group-hover:text-[#E8C547] transition-colors">{module.title}</CardTitle>
+                      <CardDescription className="text-white/50">{module.description}</CardDescription>
                     </CardHeader>
                     <CardContent>
                       <Link href={module.route}>
-                        <Button className="w-full mt-4 bg-black hover:bg-gray-800 text-white" variant="default">
+                        <Button className="w-full mt-4 bg-white/10 hover:bg-white/20 text-white" variant="default">
                           Continue Learning
                         </Button>
                       </Link>

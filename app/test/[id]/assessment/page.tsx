@@ -9,13 +9,13 @@ import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
-import { 
-    Clock, 
-    FileText, 
-    Code, 
-    MessageSquare, 
-    CheckCircle2, 
-    ArrowRight, 
+import {
+    Clock,
+    FileText,
+    Code,
+    MessageSquare,
+    CheckCircle2,
+    ArrowRight,
     ArrowLeft,
     Send,
     Shield,
@@ -82,7 +82,9 @@ export default function SequentialAssessmentPage() {
     const [timeRemaining, setTimeRemaining] = useState(0)
     const [submitted, setSubmitted] = useState(false)
     const [questionStartTime, setQuestionStartTime] = useState<number>(Date.now())
-    
+    const [showTabSwitchWarning, setShowTabSwitchWarning] = useState(false)
+    const [isFullscreen, setIsFullscreen] = useState(false)
+
     // Anti-cheat tracking (silent)
     const [antiCheatData, setAntiCheatData] = useState<AntiCheatData>({
         tab_switches: 0,
@@ -92,6 +94,8 @@ export default function SequentialAssessmentPage() {
         suspicious_patterns: []
     })
     const antiCheatRef = useRef<AntiCheatData>(antiCheatData)
+    const assessmentStartedRef = useRef(false)
+    const handleSubmitRef = useRef<(() => Promise<void>) | null>(null)
 
     // Load job and candidate info
     useEffect(() => {
@@ -100,7 +104,7 @@ export default function SequentialAssessmentPage() {
                 // Try Supabase first
                 const { getJobById } = await import('@/lib/jobService')
                 const supabaseJob = await getJobById(assessmentId)
-                
+
                 if (supabaseJob) {
                     // Format job for component
                     const formattedJob: any = {
@@ -130,7 +134,7 @@ export default function SequentialAssessmentPage() {
                     // Fallback to localStorage
                     const savedJobs = JSON.parse(localStorage.getItem('assessai_jobs') || '[]')
                     const foundJob = savedJobs.find((j: Job) => j.id === assessmentId)
-                    
+
                     if (foundJob) {
                         setJob(foundJob)
                         setTimeRemaining((foundJob.config?.duration_minutes || 60) * 60)
@@ -141,19 +145,19 @@ export default function SequentialAssessmentPage() {
                 // Fallback to localStorage
                 const savedJobs = JSON.parse(localStorage.getItem('assessai_jobs') || '[]')
                 const foundJob = savedJobs.find((j: Job) => j.id === assessmentId)
-                
+
                 if (foundJob) {
                     setJob(foundJob)
                     setTimeRemaining((foundJob.config?.duration_minutes || 60) * 60)
                 }
             }
         }
-        
+
         loadJob()
-        
+
         // Check if candidate info exists
         const candidateInfo = sessionStorage.getItem(`candidate_info_${assessmentId}`)
-        
+
         // If no candidate info and user is logged in, auto-create it
         if (!candidateInfo && user) {
             const autoCandidateInfo = {
@@ -169,9 +173,78 @@ export default function SequentialAssessmentPage() {
             router.push(`/test/${assessmentId}/info`)
             return
         }
-        
+
         setLoading(false)
     }, [assessmentId, router, user])
+
+    // Enter fullscreen mode when assessment starts
+    useEffect(() => {
+        if (loading || submitted || !job || assessmentStartedRef.current) return
+
+        const enterFullscreen = async () => {
+            try {
+                const element = document.documentElement
+                if (element.requestFullscreen) {
+                    await element.requestFullscreen()
+                    setIsFullscreen(true)
+                    assessmentStartedRef.current = true
+                } else if ((element as any).webkitRequestFullscreen) {
+                    await (element as any).webkitRequestFullscreen()
+                    setIsFullscreen(true)
+                    assessmentStartedRef.current = true
+                } else if ((element as any).mozRequestFullScreen) {
+                    await (element as any).mozRequestFullScreen()
+                    setIsFullscreen(true)
+                    assessmentStartedRef.current = true
+                } else if ((element as any).msRequestFullscreen) {
+                    await (element as any).msRequestFullscreen()
+                    setIsFullscreen(true)
+                    assessmentStartedRef.current = true
+                }
+            } catch (error) {
+                console.error('Error entering fullscreen:', error)
+                // Continue even if fullscreen fails
+                assessmentStartedRef.current = true
+            }
+        }
+
+        enterFullscreen()
+    }, [loading, submitted, job])
+
+    // Monitor fullscreen exit and auto-submit
+    useEffect(() => {
+        if (submitted) return
+
+        const handleFullscreenChange = () => {
+            const isCurrentlyFullscreen = !!(
+                document.fullscreenElement ||
+                (document as any).webkitFullscreenElement ||
+                (document as any).mozFullScreenElement ||
+                (document as any).msFullscreenElement
+            )
+
+            if (!isCurrentlyFullscreen && isFullscreen && assessmentStartedRef.current) {
+                // Fullscreen was exited, auto-submit
+                console.warn('Fullscreen exited - auto-submitting assessment')
+                if (handleSubmitRef.current) {
+                    handleSubmitRef.current()
+                }
+            }
+            setIsFullscreen(isCurrentlyFullscreen)
+        }
+
+        document.addEventListener('fullscreenchange', handleFullscreenChange)
+        document.addEventListener('webkitfullscreenchange', handleFullscreenChange)
+        document.addEventListener('mozfullscreenchange', handleFullscreenChange)
+        document.addEventListener('MSFullscreenChange', handleFullscreenChange)
+
+        return () => {
+            document.removeEventListener('fullscreenchange', handleFullscreenChange)
+            document.removeEventListener('webkitfullscreenchange', handleFullscreenChange)
+            document.removeEventListener('mozfullscreenchange', handleFullscreenChange)
+            document.removeEventListener('MSFullscreenChange', handleFullscreenChange)
+        }
+    }, [submitted, isFullscreen])
 
     // Timer
     useEffect(() => {
@@ -180,7 +253,9 @@ export default function SequentialAssessmentPage() {
         const timer = setInterval(() => {
             setTimeRemaining((prev) => {
                 if (prev <= 1) {
-                    handleSubmit()
+                    if (handleSubmitRef.current) {
+                        handleSubmitRef.current()
+                    }
                     return 0
                 }
                 return prev - 1
@@ -190,20 +265,35 @@ export default function SequentialAssessmentPage() {
         return () => clearInterval(timer)
     }, [submitted, timeRemaining])
 
-    // Silent anti-cheat: Tab switch detection
+    // Anti-cheat: Tab switch detection with warning and auto-submit
     useEffect(() => {
         if (submitted) return
 
         const handleVisibilityChange = () => {
             if (document.hidden) {
+                const newTabSwitches = antiCheatRef.current.tab_switches + 1
+
                 setAntiCheatData(prev => {
                     const updated = {
                         ...prev,
-                        tab_switches: prev.tab_switches + 1
+                        tab_switches: newTabSwitches
                     }
                     antiCheatRef.current = updated
                     return updated
                 })
+
+                // First tab switch: show warning
+                if (newTabSwitches === 1) {
+                    setShowTabSwitchWarning(true)
+                    setTimeout(() => setShowTabSwitchWarning(false), 5000)
+                }
+                // Second tab switch: auto-submit
+                else if (newTabSwitches >= 2) {
+                    console.warn('Multiple tab switches detected - auto-submitting assessment')
+                    if (handleSubmitRef.current) {
+                        handleSubmitRef.current()
+                    }
+                }
             }
         }
 
@@ -211,11 +301,14 @@ export default function SequentialAssessmentPage() {
         return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
     }, [submitted])
 
-    // Silent anti-cheat: Copy-paste detection
+    // Anti-cheat: Disable copy-paste and right-click
     useEffect(() => {
         if (submitted) return
 
-        const handlePaste = () => {
+        // Block paste events
+        const handlePaste = (e: ClipboardEvent) => {
+            e.preventDefault()
+            e.stopPropagation()
             setAntiCheatData(prev => {
                 const updated = {
                     ...prev,
@@ -226,14 +319,100 @@ export default function SequentialAssessmentPage() {
             })
         }
 
-        document.addEventListener('paste', handlePaste)
-        return () => document.removeEventListener('paste', handlePaste)
+        // Block copy events
+        const handleCopy = (e: ClipboardEvent) => {
+            e.preventDefault()
+            e.stopPropagation()
+        }
+
+        // Block cut events
+        const handleCut = (e: ClipboardEvent) => {
+            e.preventDefault()
+            e.stopPropagation()
+        }
+
+        // Block right-click context menu
+        const handleContextMenu = (e: MouseEvent) => {
+            e.preventDefault()
+            e.stopPropagation()
+            return false
+        }
+
+        // Block keyboard shortcuts
+        const handleKeyDown = (e: KeyboardEvent) => {
+            // Block common shortcuts
+            const blockedKeys = [
+                'F12', // Developer tools
+                'F5', // Refresh
+                'F11', // Fullscreen toggle
+            ]
+
+            const blockedCombos = [
+                { ctrl: true, key: 'c' }, // Copy
+                { ctrl: true, key: 'v' }, // Paste
+                { ctrl: true, key: 'x' }, // Cut
+                { ctrl: true, key: 'a' }, // Select all
+                { ctrl: true, key: 'p' }, // Print
+                { ctrl: true, key: 's' }, // Save
+                { ctrl: true, shift: true, key: 'I' }, // Dev tools
+                { ctrl: true, shift: true, key: 'J' }, // Console
+                { ctrl: true, shift: true, key: 'C' }, // Inspect
+                { ctrl: true, key: 'u' }, // View source
+                { ctrl: true, key: 'shift' }, // Shift combinations
+                { meta: true, key: 'c' }, // Mac copy
+                { meta: true, key: 'v' }, // Mac paste
+                { meta: true, key: 'x' }, // Mac cut
+                { meta: true, key: 'a' }, // Mac select all
+            ]
+
+            // Check for blocked single keys
+            if (blockedKeys.includes(e.key)) {
+                e.preventDefault()
+                e.stopPropagation()
+                return false
+            }
+
+            // Check for blocked key combinations
+            for (const combo of blockedCombos) {
+                const ctrlMatch = (combo.ctrl && (e.ctrlKey || e.metaKey)) || (!combo.ctrl && !e.ctrlKey && !e.metaKey)
+                const shiftMatch = (combo.shift && e.shiftKey) || (!combo.shift && !e.shiftKey)
+                const keyMatch = combo.key.toLowerCase() === e.key.toLowerCase()
+
+                if (ctrlMatch && shiftMatch && keyMatch) {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    return false
+                }
+            }
+        }
+
+        // Block text selection (optional - can be too restrictive)
+        const handleSelectStart = (e: Event) => {
+            // Allow selection for typing, but prevent programmatic selection
+            // We'll be more lenient here
+        }
+
+        document.addEventListener('paste', handlePaste, true)
+        document.addEventListener('copy', handleCopy, true)
+        document.addEventListener('cut', handleCut, true)
+        document.addEventListener('contextmenu', handleContextMenu, true)
+        document.addEventListener('keydown', handleKeyDown, true)
+        document.addEventListener('selectstart', handleSelectStart, true)
+
+        return () => {
+            document.removeEventListener('paste', handlePaste, true)
+            document.removeEventListener('copy', handleCopy, true)
+            document.removeEventListener('cut', handleCut, true)
+            document.removeEventListener('contextmenu', handleContextMenu, true)
+            document.removeEventListener('keydown', handleKeyDown, true)
+            document.removeEventListener('selectstart', handleSelectStart, true)
+        }
     }, [submitted])
 
     // Track time per question
     useEffect(() => {
         if (submitted) return
-        
+
         const questionId = getCurrentQuestion()?.id
         if (!questionId) return
 
@@ -277,7 +456,7 @@ export default function SequentialAssessmentPage() {
 
     const updateAnswer = useCallback((questionId: string, response: any) => {
         const timeSpent = Math.round((Date.now() - questionStartTime) / 1000)
-        
+
         setAnswers((prev) => {
             const updatedAnswers = {
                 ...prev,
@@ -288,17 +467,17 @@ export default function SequentialAssessmentPage() {
                     time_spent_seconds: (prev[questionId]?.time_spent_seconds || 0) + timeSpent
                 }
             }
-            
+
             // Auto-save to sessionStorage
             sessionStorage.setItem(`assessment_answers_${assessmentId}`, JSON.stringify(updatedAnswers))
-            
+
             return updatedAnswers
         })
     }, [questionStartTime, assessmentId])
 
     const handleNext = () => {
         const sectionQuestions = getQuestionsBySection(currentSection)
-        
+
         if (currentQuestionIndex < sectionQuestions.length - 1) {
             setQuestionStartTime(Date.now())
             setCurrentQuestionIndex(currentQuestionIndex + 1)
@@ -334,14 +513,16 @@ export default function SequentialAssessmentPage() {
         }
     }
 
-    const handleSubmit = async () => {
+    const handleSubmit = useCallback(async () => {
+        if (submitted) return // Prevent multiple submissions
+
         // Save final answers and anti-cheat data
         const candidateInfo = JSON.parse(sessionStorage.getItem(`candidate_info_${assessmentId}`) || '{}')
-        
+
         // Use the actual assessment ID from the job if available, otherwise use the job ID
         // The submission service will look up the assessment ID if needed
         const actualAssessmentId = (job as any)?.assessmentId || assessmentId
-        
+
         const submissionData = {
             assessmentId: actualAssessmentId,
             candidateInfo,
@@ -354,53 +535,62 @@ export default function SequentialAssessmentPage() {
                 assessmentId: actualAssessmentId // Include assessment ID in job object for lookup
             }
         }
-        
+
         // Save to sessionStorage (for candidate reference)
         sessionStorage.setItem(`submission_${assessmentId}`, JSON.stringify(submissionData))
-        
+
         // Save to recruiter-accessible storage and evaluate
         try {
             const { saveSubmission } = await import('@/lib/submissionService')
             const { evaluateAndSaveSubmission } = await import('@/lib/evaluationService')
-            
+
             // Validate submission data before saving
             if (!submissionData.candidateInfo?.name || !submissionData.candidateInfo?.email) {
                 console.error('Missing candidate info:', submissionData.candidateInfo)
                 throw new Error('Missing candidate information')
             }
-            
+
             if (!submissionData.job?.id || !submissionData.job?.title) {
                 console.error('Missing job info:', submissionData.job)
                 throw new Error('Missing job information')
             }
-            
+
             // Save submission (now async with Supabase support)
-            const submission = await saveSubmission(submissionData)
+            const submission = await saveSubmission(submissionData as any)
             console.log('Submission saved:', submission.id)
-            
+
             // Evaluate and calculate scores
             if (job?.questions && Array.isArray(job.questions) && job.questions.length > 0) {
                 console.log('Evaluating submission with', job.questions.length, 'questions')
-                await evaluateAndSaveSubmission(submission, job.questions)
+                console.log('Submission answers:', Object.keys(submission.answers || {}).length, 'answers found')
+                console.log('Answer types:', Object.values(submission.answers || {}).map((a: any) => a.question_type))
+
+                // Get passing percentage from job config or assessment
+                const passingPercentage = (job as any)?.assessment?.passing_percentage ||
+                    (job as any)?.config?.passing_percentage ||
+                    50
+                console.log('Passing threshold:', passingPercentage + '%')
+
+                await evaluateAndSaveSubmission(submission, job.questions as any, passingPercentage)
                 console.log('Evaluation complete')
-                
+
                 // Run plagiarism and bot detection
                 try {
                     const { checkSubmissionPlagiarism } = await import('@/lib/plagiarismDetection')
                     const { detectBotActivity } = await import('@/lib/botDetection')
                     const { updateSubmissionPlagiarism, updateSubmissionBotDetection } = require('@/lib/submissionService')
-                    
+
                     // Check plagiarism
                     const plagiarismResults = await checkSubmissionPlagiarism(submission, job.questions)
                     const hasPlagiarism = Object.values(plagiarismResults).some(r => r.flagged)
-                    
+
                     if (hasPlagiarism) {
                         updateSubmissionPlagiarism(submission.id, plagiarismResults)
                         console.log('Plagiarism detected')
                     }
-                    
+
                     // Detect bot activity
-                    const botDetection = detectBotActivity(submission, job.questions)
+                    const botDetection = await detectBotActivity(submission, job.questions)
                     if (botDetection.isBot || botDetection.riskScore >= 50) {
                         updateSubmissionBotDetection(submission.id, botDetection)
                         console.log('Bot activity detected', botDetection)
@@ -416,11 +606,32 @@ export default function SequentialAssessmentPage() {
             console.error('Error saving submission:', error)
             // Still redirect even if save fails (candidate shouldn't see error)
         }
-        
+
+        // Exit fullscreen mode before redirecting
+        try {
+            if (document.fullscreenElement) {
+                await document.exitFullscreen()
+            } else if ((document as any).webkitFullscreenElement) {
+                await (document as any).webkitExitFullscreen()
+            } else if ((document as any).mozFullScreenElement) {
+                await (document as any).mozCancelFullScreen()
+            } else if ((document as any).msFullscreenElement) {
+                await (document as any).msExitFullscreen()
+            }
+        } catch (error) {
+            console.warn('Error exiting fullscreen:', error)
+            // Continue even if exit fails
+        }
+
         // Mark as submitted and redirect
         setSubmitted(true)
         router.push(`/test/${assessmentId}/submitted`)
-    }
+    }, [submitted, assessmentId, answers, job, router])
+
+    // Store handleSubmit in ref for use in useEffect hooks
+    useEffect(() => {
+        handleSubmitRef.current = handleSubmit
+    }, [handleSubmit])
 
     const canProceedToNextSection = () => {
         const sectionQuestions = getQuestionsBySection(currentSection)
@@ -433,22 +644,20 @@ export default function SequentialAssessmentPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent" />
+            <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-4 border-white border-t-transparent" />
             </div>
         )
     }
 
     if (!job) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center p-4">
-                <Card>
-                    <CardContent className="pt-6 text-center">
-                        <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-                        <h2 className="text-xl font-semibold mb-2">Assessment Not Found</h2>
-                        <p className="text-gray-500">This assessment is not available.</p>
-                    </CardContent>
-                </Card>
+            <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center p-4">
+                <div className="bg-white/5 border border-white/10 rounded-xl p-6 text-center">
+                    <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+                    <h2 className="text-xl font-semibold text-white mb-2">Assessment Not Found</h2>
+                    <p className="text-white/60">This assessment is not available.</p>
+                </div>
             </div>
         )
     }
@@ -457,29 +666,53 @@ export default function SequentialAssessmentPage() {
     const mcqProgress = getSectionProgress('mcq')
     const subjProgress = getSectionProgress('subjective')
     const codingProgress = getSectionProgress('coding')
-    
+
     const mcqQuestions = getQuestionsBySection('mcq')
     const subjQuestions = getQuestionsBySection('subjective')
     const codingQuestions = getQuestionsBySection('coding')
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+        <div className="min-h-screen bg-[#0a0a0a]">
+            {/* Tab Switch Warning Modal */}
+            {showTabSwitchWarning && (
+                <div className="fixed inset-0 bg-black/70 z-[9999] flex items-center justify-center">
+                    <div className="bg-[#1a1a1a] border border-white/20 rounded-xl p-6 max-w-md mx-4">
+                        <div className="flex items-center gap-3 mb-4">
+                            <AlertCircle className="w-8 h-8 text-amber-500" />
+                            <h3 className="text-xl font-bold text-white">Warning: Tab Switch Detected</h3>
+                        </div>
+                        <p className="text-white/70 mb-4">
+                            Switching tabs during the assessment is not allowed. This is your first warning.
+                            <strong className="block mt-2 text-red-400">
+                                If you switch tabs again, your assessment will be automatically submitted.
+                            </strong>
+                        </p>
+                        <Button
+                            onClick={() => setShowTabSwitchWarning(false)}
+                            className="w-full bg-white text-black hover:bg-white/90"
+                        >
+                            I Understand
+                        </Button>
+                    </div>
+                </div>
+            )}
+
             {/* Header */}
-            <div className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
+            <div className="bg-[#0a0a0a] border-b border-white/10 sticky top-0 z-50">
                 <div className="container mx-auto px-4 py-4">
                     <div className="flex items-center justify-between">
                         <div>
-                            <h1 className="text-lg font-bold text-gray-900">{job.title}</h1>
-                            <p className="text-sm text-gray-500">{job.company}</p>
+                            <h1 className="text-lg font-bold text-white">{job.title}</h1>
+                            <p className="text-sm text-white/50">{job.company}</p>
                         </div>
                         <div className="flex items-center gap-4">
-                            <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                            <div className="flex items-center gap-2 text-sm font-medium text-white">
                                 <Clock className="w-4 h-4" />
-                                <span className={timeRemaining < 300 ? 'text-red-600' : ''}>
+                                <span className={timeRemaining < 300 ? 'text-red-400' : 'text-white'}>
                                     {formatTime(timeRemaining)}
                                 </span>
                             </div>
-                            <Badge variant="outline" className="flex items-center gap-1">
+                            <Badge variant="outline" className="flex items-center gap-1 border-white/20 text-white/70">
                                 <Shield className="w-3 h-3" />
                                 Protected
                             </Badge>
@@ -494,31 +727,31 @@ export default function SequentialAssessmentPage() {
                     <div className="flex items-center gap-4 mb-4">
                         <div className={`flex-1 ${currentSection === 'mcq' ? 'opacity-100' : 'opacity-50'}`}>
                             <div className="flex items-center gap-2 mb-2">
-                                <FileText className="w-4 h-4 text-primary" />
-                                <span className="text-sm font-semibold">Section A: MCQs</span>
-                                <Badge variant="secondary" className="ml-2">
+                                <FileText className="w-4 h-4 text-blue-400" />
+                                <span className="text-sm font-semibold text-white">Section A: MCQs</span>
+                                <Badge variant="secondary" className="ml-2 bg-white/10 text-white/70 border-white/10">
                                     {mcqProgress.answered}/{mcqProgress.total}
                                 </Badge>
                             </div>
                             <Progress value={(mcqProgress.answered / mcqProgress.total) * 100} className="h-2" />
                         </div>
-                        <ArrowRight className="w-4 h-4 text-gray-400" />
+                        <ArrowRight className="w-4 h-4 text-white/30" />
                         <div className={`flex-1 ${currentSection === 'subjective' ? 'opacity-100' : currentSection === 'coding' ? 'opacity-100' : 'opacity-50'}`}>
                             <div className="flex items-center gap-2 mb-2">
-                                <MessageSquare className="w-4 h-4 text-purple-600" />
-                                <span className="text-sm font-semibold">Section B: Subjective</span>
-                                <Badge variant="secondary" className="ml-2">
+                                <MessageSquare className="w-4 h-4 text-purple-400" />
+                                <span className="text-sm font-semibold text-white">Section B: Subjective</span>
+                                <Badge variant="secondary" className="ml-2 bg-white/10 text-white/70 border-white/10">
                                     {subjProgress.answered}/{subjProgress.total}
                                 </Badge>
                             </div>
                             <Progress value={(subjProgress.answered / subjProgress.total) * 100} className="h-2" />
                         </div>
-                        <ArrowRight className="w-4 h-4 text-gray-400" />
+                        <ArrowRight className="w-4 h-4 text-white/30" />
                         <div className={`flex-1 ${currentSection === 'coding' ? 'opacity-100' : 'opacity-50'}`}>
                             <div className="flex items-center gap-2 mb-2">
-                                <Code className="w-4 h-4 text-green-600" />
-                                <span className="text-sm font-semibold">Section C: Coding</span>
-                                <Badge variant="secondary" className="ml-2">
+                                <Code className="w-4 h-4 text-emerald-400" />
+                                <span className="text-sm font-semibold text-white">Section C: Coding</span>
+                                <Badge variant="secondary" className="ml-2 bg-white/10 text-white/70 border-white/10">
                                     {codingProgress.answered}/{codingProgress.total}
                                 </Badge>
                             </div>
@@ -529,26 +762,26 @@ export default function SequentialAssessmentPage() {
 
                 {/* Question Card */}
                 {currentQuestion && (
-                    <Card className="mb-6">
-                        <CardContent className="p-6">
+                    <div className="bg-white/5 border border-white/10 rounded-xl mb-6">
+                        <div className="p-6">
                             <div className="flex items-center justify-between mb-4">
                                 <div className="flex items-center gap-2">
-                                    <Badge variant="outline">
+                                    <Badge variant="outline" className="border-white/20 text-white/70">
                                         {currentSection === 'mcq' && 'MCQ'}
                                         {currentSection === 'subjective' && 'Subjective'}
                                         {currentSection === 'coding' && 'Coding'}
                                     </Badge>
-                                    <span className="text-sm text-gray-500">
+                                    <span className="text-sm text-white/50">
                                         Question {currentQuestionIndex + 1} of {getQuestionsBySection(currentSection).length}
                                     </span>
                                 </div>
-                                <div className="text-sm font-medium text-gray-700">
+                                <div className="text-sm font-medium text-white/70">
                                     {currentQuestion.marks} marks
                                 </div>
                             </div>
 
                             <div className="mb-6">
-                                <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                                <h3 className="text-lg font-semibold text-white mb-4">
                                     {currentQuestion.content.question || currentQuestion.content.problem_statement}
                                 </h3>
 
@@ -561,9 +794,9 @@ export default function SequentialAssessmentPage() {
                                         })}
                                     >
                                         {currentQuestion.content.options?.map((option: string, idx: number) => (
-                                            <div key={idx} className="flex items-center space-x-2 p-3 rounded-lg hover:bg-gray-50 border border-transparent hover:border-gray-200">
-                                                <RadioGroupItem value={idx.toString()} id={`option-${idx}`} />
-                                                <Label htmlFor={`option-${idx}`} className="flex-1 cursor-pointer">
+                                            <div key={idx} className="flex items-center space-x-2 p-3 rounded-lg hover:bg-white/5 border border-transparent hover:border-white/10">
+                                                <RadioGroupItem value={idx.toString()} id={`option-${idx}`} className="border-white/30" />
+                                                <Label htmlFor={`option-${idx}`} className="flex-1 cursor-pointer text-white/80">
                                                     {option}
                                                 </Label>
                                             </div>
@@ -580,10 +813,10 @@ export default function SequentialAssessmentPage() {
                                             onChange={(e) => updateAnswer(currentQuestion.id, {
                                                 text: e.target.value
                                             })}
-                                            className="min-h-[200px]"
+                                            className="min-h-[200px] bg-white/5 border-white/10 text-white placeholder:text-white/30"
                                         />
                                         {currentQuestion.content.max_words && (
-                                            <p className="text-sm text-gray-500">
+                                            <p className="text-sm text-white/50">
                                                 Maximum {currentQuestion.content.max_words} words
                                             </p>
                                         )}
@@ -594,22 +827,22 @@ export default function SequentialAssessmentPage() {
                                 {currentQuestion.type === 'coding' && (
                                     <div className="space-y-4">
                                         {currentQuestion.content.input_format && (
-                                            <div className="bg-gray-50 p-4 rounded-lg">
-                                                <div className="text-sm font-semibold mb-2">Input Format:</div>
-                                                <div className="text-sm text-gray-700 whitespace-pre-wrap">
+                                            <div className="bg-white/5 border border-white/10 p-4 rounded-lg">
+                                                <div className="text-sm font-semibold text-white mb-2">Input Format:</div>
+                                                <div className="text-sm text-white/70 whitespace-pre-wrap">
                                                     {currentQuestion.content.input_format}
                                                 </div>
                                             </div>
                                         )}
                                         {currentQuestion.content.output_format && (
-                                            <div className="bg-gray-50 p-4 rounded-lg">
-                                                <div className="text-sm font-semibold mb-2">Output Format:</div>
-                                                <div className="text-sm text-gray-700 whitespace-pre-wrap">
+                                            <div className="bg-white/5 border border-white/10 p-4 rounded-lg">
+                                                <div className="text-sm font-semibold text-white mb-2">Output Format:</div>
+                                                <div className="text-sm text-white/70 whitespace-pre-wrap">
                                                     {currentQuestion.content.output_format}
                                                 </div>
                                             </div>
                                         )}
-                                        <div className="border rounded-lg overflow-hidden">
+                                        <div className="border border-white/10 rounded-lg overflow-hidden">
                                             <MonacoEditor
                                                 height="400px"
                                                 language="javascript"
@@ -631,20 +864,21 @@ export default function SequentialAssessmentPage() {
                             </div>
 
                             {/* Navigation */}
-                            <div className="flex items-center justify-between pt-4 border-t">
+                            <div className="flex items-center justify-between pt-4 border-t border-white/10">
                                 <Button
                                     variant="outline"
                                     onClick={handlePrev}
                                     disabled={currentQuestionIndex === 0 && currentSection === 'mcq'}
+                                    className="border-white/10 text-white/70 hover:bg-white/10 hover:text-white"
                                 >
                                     <ArrowLeft className="w-4 h-4 mr-2" />
                                     Previous
                                 </Button>
-                                
+
                                 {canSubmit() ? (
                                     <Button
                                         onClick={handleSubmit}
-                                        className="bg-primary hover:bg-primary/90"
+                                        className="bg-white text-black hover:bg-white/90"
                                     >
                                         <Send className="w-4 h-4 mr-2" />
                                         Submit Assessment
@@ -652,15 +886,15 @@ export default function SequentialAssessmentPage() {
                                 ) : (
                                     <Button
                                         onClick={handleNext}
-                                        className="bg-primary hover:bg-primary/90"
+                                        className="bg-white text-black hover:bg-white/90"
                                     >
                                         Next
                                         <ArrowRight className="w-4 h-4 ml-2" />
                                     </Button>
                                 )}
                             </div>
-                        </CardContent>
-                    </Card>
+                        </div>
+                    </div>
                 )}
             </div>
         </div>

@@ -83,6 +83,9 @@ const config: Config = {
         "float": "float 6s ease-in-out infinite",
         "pulse-glow": "pulse-glow 3s infinite",
       },
+      backgroundImage: {
+        "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
+      },
     },
   },
   plugins: [require("tailwindcss-animate")],

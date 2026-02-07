@@ -377,18 +377,20 @@ export async function updateSubmissionStatus(
 /**
  * Update submission scores
  */
-export async function updateSubmissionScores(submissionId: string, scores: CandidateSubmission['scores']): Promise<boolean> {
+export async function updateSubmissionScores(
+    submissionId: string, 
+    scores: CandidateSubmission['scores'],
+    passingPercentage?: number
+): Promise<boolean> {
     // Check if it's a UUID (Supabase) or old format (localStorage)
     const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(submissionId)
     
     if (isUUID) {
         // Try Supabase first
         try {
-            const { saveSubmissionScores, updateSubmissionStatus } = await import('./submissionServiceSupabase')
-            const scoresSaved = await saveSubmissionScores(submissionId, scores)
+            const { saveSubmissionScores } = await import('./submissionServiceSupabase')
+            const scoresSaved = await saveSubmissionScores(submissionId, scores, passingPercentage)
             if (scoresSaved) {
-                // Update status to evaluated
-                await updateSubmissionStatus(submissionId, 'evaluated')
                 return true
             }
         } catch (error) {
@@ -402,7 +404,12 @@ export async function updateSubmissionScores(submissionId: string, scores: Candi
     
     if (index >= 0) {
         submissions[index].scores = scores
-        submissions[index].status = 'evaluated'
+        
+        // Check passing threshold
+        const threshold = passingPercentage || 50
+        const passed = (scores?.percentage || 0) >= threshold
+        submissions[index].status = passed ? 'shortlisted' : 'evaluated'
+        
         localStorage.setItem(STORAGE_KEY, JSON.stringify(submissions))
         
         // Dispatch event

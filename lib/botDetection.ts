@@ -223,11 +223,11 @@ function detectIdenticalResponses(
 /**
  * Main bot detection function
  */
-export function detectBotActivity(
+export async function detectBotActivity(
     submission: CandidateSubmission,
     questions: Array<{ id: string; type: string; content?: any }>
-): BotDetectionResult {
-    const allSubmissions = getAllSubmissions()
+): Promise<BotDetectionResult> {
+    const allSubmissions = await getAllSubmissions()
     const flags: BotDetectionResult['flags'] = []
     
     // Run all detection methods

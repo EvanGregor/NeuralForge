@@ -75,6 +75,31 @@ export async function saveSubmission(submissionData: {
         // Get or create candidate user ID
         let candidateId = submissionData.candidateInfo.userId
 
+        // Fetch resume data if candidate is logged in
+        let resumeDataForSubmission = null
+        if (candidateId) {
+            try {
+                const { getResumeData } = await import('@/lib/resumeService')
+                const resumeData = await getResumeData(candidateId)
+                if (resumeData) {
+                    resumeDataForSubmission = {
+                        skills: resumeData.skills || [],
+                        personalInfo: resumeData.personal_info || {},
+                        experience: resumeData.experience || [],
+                        education: resumeData.education || [],
+                        summary: resumeData.summary || '',
+                        achievements: resumeData.achievements || [],
+                        certifications: resumeData.certifications || [],
+                        languages: resumeData.languages || [],
+                        projects: resumeData.projects || [],
+                        atsScore: resumeData.ats_score || 0
+                    }
+                }
+            } catch (error) {
+                console.warn('Could not fetch resume data for submission:', error)
+            }
+        }
+
         // If no userId, try to find by email
         if (!candidateId) {
             // For anonymous submissions, we'll use a placeholder
@@ -113,7 +138,7 @@ export async function saveSubmission(submissionData: {
                 candidate_id: candidateId,
                 assessment_id: actualAssessmentId,
                 job_id: submissionData.job.id,
-                resume_data: submissionData.candidateInfo.resumeData || null,
+                resume_data: resumeDataForSubmission || submissionData.candidateInfo.resumeData || null,
                 started_at: submissionData.candidateInfo.startedAt,
                 submitted_at: submissionData.submittedAt,
                 status: 'submitted' as SubmissionStatus,
@@ -158,7 +183,14 @@ export async function saveSubmission(submissionData: {
 
                     if (updated) {
                         await saveAnswers(updated.id, submissionData.answers)
-                        return formatSubmission(updated, submissionData)
+                        // Update resume_data if we have it
+                        if (resumeDataForSubmission) {
+                            await supabase
+                                .from('submissions')
+                                .update({ resume_data: resumeDataForSubmission })
+                                .eq('id', updated.id)
+                        }
+                        return formatSubmission(updated, submissionData, resumeDataForSubmission)
                     }
                 }
             }
@@ -170,8 +202,16 @@ export async function saveSubmission(submissionData: {
         // 2. Save answers
         await saveAnswers(submission.id, submissionData.answers)
 
-        // 3. Format and return
-        return formatSubmission(submission, submissionData)
+        // 3. Update resume_data if we have it
+        if (resumeDataForSubmission) {
+            await supabase
+                .from('submissions')
+                .update({ resume_data: resumeDataForSubmission })
+                .eq('id', submission.id)
+        }
+
+        // 4. Format and return
+        return formatSubmission(submission, submissionData, resumeDataForSubmission)
     } catch (error) {
         console.error('Error in saveSubmission:', error)
         return null
@@ -215,7 +255,7 @@ async function saveAnswers(submissionId: string, answers: Record<string, Answer>
 /**
  * Format database submission to CandidateSubmission format
  */
-function formatSubmission(dbSubmission: any, submissionData: any): CandidateSubmission {
+function formatSubmission(dbSubmission: any, submissionData: any, resumeData?: any): CandidateSubmission {
     return {
         id: dbSubmission.id,
         assessmentId: dbSubmission.assessment_id,
@@ -232,7 +272,7 @@ function formatSubmission(dbSubmission: any, submissionData: any): CandidateSubm
         antiCheatData: dbSubmission.anti_cheat_flags || {},
         submittedAt: dbSubmission.submitted_at,
         status: dbSubmission.status,
-        resumeData: dbSubmission.resume_data
+        resumeData: resumeData || dbSubmission.resume_data || submissionData.candidateInfo.resumeData || null
     }
 }
 
@@ -254,9 +294,16 @@ export async function getSubmissionsByCandidate(candidateId?: string, candidateE
 
         if (candidateId) {
             query = query.eq('candidate_id', candidateId)
+        } else if (candidateEmail) {
+            // Note: We can't query auth.users.email from client-side
+            // If only email is provided without candidateId, we can't reliably find the user
+            // Return empty array - caller should provide candidateId when available
+            console.warn('Cannot lookup candidate by email alone. Please provide candidateId.')
+            return []
+        } else {
+            // No candidate ID or email provided
+            return []
         }
-        // Note: Email-based lookup would require joining with user_profiles
-        // For now, we'll rely on candidate_id
 
         const { data: submissions, error } = await query
 
@@ -292,18 +339,22 @@ export async function getSubmissionsByCandidate(candidateId?: string, candidateE
 
                 // Get user profile if available
                 let candidateName = 'Candidate'
+                let candidateEmailValue = candidateEmail || ''
+                
                 if (submission.candidate_id) {
                     try {
                         const { data: profile } = await supabase
                             .from('user_profiles')
                             .select('full_name')
                             .eq('id', submission.candidate_id)
-                            .single()
+                            .maybeSingle()
                         if (profile?.full_name) {
                             candidateName = profile.full_name
                         }
+                        // Email is not stored in user_profiles, use the passed email or leave empty
                     } catch (e) {
-                        // Ignore
+                        // If profile doesn't exist, use defaults
+                        console.warn('Could not fetch user profile:', e)
                     }
                 }
 
@@ -315,7 +366,7 @@ export async function getSubmissionsByCandidate(candidateId?: string, candidateE
                     company: submission.jobs?.company || '',
                     candidateInfo: {
                         name: candidateName,
-                        email: candidateEmail || '',
+                        email: candidateEmailValue,
                         userId: submission.candidate_id,
                         startedAt: submission.started_at || new Date().toISOString()
                     },
@@ -752,6 +803,11 @@ export async function updateSubmissionStatus(
             return false
         }
 
+        // Dispatch event to notify UI of update
+        if (typeof window !== 'undefined') {
+            window.dispatchEvent(new Event('submissionUpdated'))
+        }
+
         return true
     } catch (error) {
         console.error('Error in updateSubmissionStatus:', error)
@@ -764,7 +820,8 @@ export async function updateSubmissionStatus(
  */
 export async function saveSubmissionScores(
     submissionId: string,
-    scores: CandidateSubmission['scores']
+    scores: CandidateSubmission['scores'],
+    passingPercentage?: number
 ): Promise<boolean> {
     try {
         const { error } = await supabase
@@ -776,6 +833,8 @@ export async function saveSubmissionScores(
                 percentage: scores?.percentage || 0,
                 section_scores: scores?.sectionScores || {},
                 skill_scores: scores?.skillScores || {}
+            }, {
+                onConflict: 'submission_id'
             })
 
         if (error) {
@@ -789,8 +848,56 @@ export async function saveSubmissionScores(
             return false
         }
 
-        // Update submission status to evaluated
-        await updateSubmissionStatus(submissionId, 'evaluated')
+        // Determine status based on passing threshold
+        // If passingPercentage is provided, check if candidate passed
+        let status: SubmissionStatus = 'evaluated'
+        
+        if (passingPercentage !== undefined) {
+            const candidatePercentage = scores?.percentage || 0
+            if (candidatePercentage >= passingPercentage) {
+                status = 'shortlisted'
+                console.log(`Candidate passed with ${candidatePercentage}% (threshold: ${passingPercentage}%)`)
+            } else {
+                status = 'evaluated'
+                console.log(`Candidate did not pass with ${candidatePercentage}% (threshold: ${passingPercentage}%)`)
+            }
+        } else {
+            // If no passing percentage provided, try to get it from the assessment
+            try {
+                // Get submission to find assessment_id
+                const { data: submission } = await supabase
+                    .from('submissions')
+                    .select('assessment_id')
+                    .eq('id', submissionId)
+                    .single()
+
+                if (submission?.assessment_id) {
+                    // Get assessment to find passing_percentage
+                    const { data: assessment } = await supabase
+                        .from('assessments')
+                        .select('passing_percentage')
+                        .eq('id', submission.assessment_id)
+                        .single()
+
+                    if (assessment?.passing_percentage !== undefined) {
+                        const candidatePercentage = scores?.percentage || 0
+                        if (candidatePercentage >= assessment.passing_percentage) {
+                            status = 'shortlisted'
+                            console.log(`Candidate passed with ${candidatePercentage}% (threshold: ${assessment.passing_percentage}%)`)
+                        } else {
+                            status = 'evaluated'
+                            console.log(`Candidate did not pass with ${candidatePercentage}% (threshold: ${assessment.passing_percentage}%)`)
+                        }
+                    }
+                }
+            } catch (e) {
+                console.warn('Could not fetch passing percentage from assessment:', e)
+                // Default to evaluated if we can't determine
+            }
+        }
+
+        // Update submission status
+        await updateSubmissionStatus(submissionId, status)
 
         return true
     } catch (error) {

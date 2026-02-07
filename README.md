@@ -136,7 +136,59 @@ APYHUB_API_KEY=your_apyhub_api_key
    - Indexes for performance
    - Triggers for automatic profile creation
 
-3. **Verify Setup**:
+3. **Set Up Storage Buckets**:
+   
+   **For Profile Photos (`avatars` bucket):**
+   - Go to Supabase Dashboard → Storage
+   - Click "Create a new bucket"
+   - Name: `avatars`
+   - Make it **Public**
+   - Click "Create bucket"
+   - Add policies (or use SQL Editor):
+     ```sql
+     -- Allow authenticated users to upload their own avatars
+     CREATE POLICY "Users can upload own avatar"
+     ON storage.objects FOR INSERT
+     WITH CHECK (
+       bucket_id = 'avatars' AND
+       auth.uid()::text = (storage.foldername(name))[1]
+     );
+     
+     -- Allow public read access
+     CREATE POLICY "Public avatar access"
+     ON storage.objects FOR SELECT
+     USING (bucket_id = 'avatars');
+     ```
+   
+   **For Resumes (`resumes` bucket - Optional):**
+   - Create another bucket named `resumes`
+   - Make it **Public** (or Private with proper policies)
+   - Add policies:
+     ```sql
+     -- Allow authenticated users to upload their own resumes
+     CREATE POLICY "Users can upload own resume"
+     ON storage.objects FOR INSERT
+     WITH CHECK (
+       bucket_id = 'resumes' AND
+       auth.uid()::text = (storage.foldername(name))[1]
+     );
+     
+     -- Allow recruiters to view resumes
+     CREATE POLICY "Recruiters can view resumes"
+     ON storage.objects FOR SELECT
+     USING (
+       bucket_id = 'resumes' AND
+       EXISTS (
+         SELECT 1 FROM user_profiles
+         WHERE user_profiles.id = auth.uid()
+         AND user_profiles.role IN ('recruiter', 'admin')
+       )
+     );
+     ```
+   
+   **Note:** Resume file storage is optional. The parsed resume data is stored in the database, so the file storage is only for reference.
+
+4. **Verify Setup**:
    - Check that all tables are created
    - Verify RLS policies are enabled
    - Test user creation to ensure trigger works
