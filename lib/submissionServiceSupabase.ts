@@ -131,6 +131,13 @@ export async function saveSubmission(submissionData: {
             }
         }
 
+        // Prepare resume_data with candidate info
+        const resumeDataWithCandidateInfo = {
+            ...(resumeDataForSubmission || submissionData.candidateInfo.resumeData || {}),
+            candidate_name: submissionData.candidateInfo.name,
+            candidate_email: submissionData.candidateInfo.email
+        }
+
         // 1. Create submission record
         const { data: submission, error: submissionError } = await supabase
             .from('submissions')
@@ -138,7 +145,7 @@ export async function saveSubmission(submissionData: {
                 candidate_id: candidateId,
                 assessment_id: actualAssessmentId,
                 job_id: submissionData.job.id,
-                resume_data: resumeDataForSubmission || submissionData.candidateInfo.resumeData || null,
+                resume_data: resumeDataWithCandidateInfo,
                 started_at: submissionData.candidateInfo.startedAt,
                 submitted_at: submissionData.submittedAt,
                 status: 'submitted' as SubmissionStatus,
@@ -183,13 +190,16 @@ export async function saveSubmission(submissionData: {
 
                     if (updated) {
                         await saveAnswers(updated.id, submissionData.answers)
-                        // Update resume_data if we have it
-                        if (resumeDataForSubmission) {
-                            await supabase
-                                .from('submissions')
-                                .update({ resume_data: resumeDataForSubmission })
-                                .eq('id', updated.id)
+                        // Update resume_data if we have it (including candidate info)
+                        const resumeDataWithCandidateInfo = {
+                            ...(resumeDataForSubmission || {}),
+                            candidate_name: submissionData.candidateInfo.name,
+                            candidate_email: submissionData.candidateInfo.email
                         }
+                        await supabase
+                            .from('submissions')
+                            .update({ resume_data: resumeDataWithCandidateInfo })
+                            .eq('id', updated.id)
                         return formatSubmission(updated, submissionData, resumeDataForSubmission)
                     }
                 }
@@ -202,13 +212,8 @@ export async function saveSubmission(submissionData: {
         // 2. Save answers
         await saveAnswers(submission.id, submissionData.answers)
 
-        // 3. Update resume_data if we have it
-        if (resumeDataForSubmission) {
-            await supabase
-                .from('submissions')
-                .update({ resume_data: resumeDataForSubmission })
-                .eq('id', submission.id)
-        }
+        // Note: resume_data with candidate info was already set during insert above,
+        // so no need to update it again here
 
         // 4. Format and return
         return formatSubmission(submission, submissionData, resumeDataForSubmission)
@@ -337,11 +342,25 @@ export async function getSubmissionsByCandidate(candidateId?: string, candidateE
                     .eq('submission_id', submission.id)
                     .single()
 
-                // Get user profile if available
+                // Get candidate name and email
                 let candidateName = 'Candidate'
                 let candidateEmailValue = candidateEmail || ''
                 
-                if (submission.candidate_id) {
+                // First, try to get from stored resume_data
+                // resume_data is a JSONB field, so it could be an object with candidate_name/candidate_email
+                if (submission.resume_data) {
+                    if (typeof submission.resume_data === 'object' && submission.resume_data !== null) {
+                        if (submission.resume_data.candidate_name) {
+                            candidateName = String(submission.resume_data.candidate_name)
+                        }
+                        if (submission.resume_data.candidate_email) {
+                            candidateEmailValue = String(submission.resume_data.candidate_email)
+                        }
+                    }
+                }
+                
+                // Fallback to user_profiles if not in resume_data
+                if (submission.candidate_id && candidateName === 'Candidate') {
                     try {
                         const { data: profile } = await supabase
                             .from('user_profiles')
@@ -351,9 +370,7 @@ export async function getSubmissionsByCandidate(candidateId?: string, candidateE
                         if (profile?.full_name) {
                             candidateName = profile.full_name
                         }
-                        // Email is not stored in user_profiles, use the passed email or leave empty
                     } catch (e) {
-                        // If profile doesn't exist, use defaults
                         console.warn('Could not fetch user profile:', e)
                     }
                 }
@@ -438,6 +455,49 @@ export async function getAllSubmissions(): Promise<CandidateSubmission[]> {
                     .eq('submission_id', submission.id)
                     .single()
 
+                // Get candidate name and email
+                let candidateName = 'Candidate'
+                let candidateEmail = ''
+                
+                // First, try to get from stored resume_data
+                // resume_data is a JSONB field, so it could be an object with candidate_name/candidate_email
+                if (submission.resume_data) {
+                    if (typeof submission.resume_data === 'object' && submission.resume_data !== null) {
+                        if (submission.resume_data.candidate_name) {
+                            candidateName = String(submission.resume_data.candidate_name)
+                        }
+                        if (submission.resume_data.candidate_email) {
+                            candidateEmail = String(submission.resume_data.candidate_email)
+                        }
+                    }
+                }
+                
+                // Fallback to user_profiles if not in resume_data
+                if (submission.candidate_id && candidateName === 'Candidate') {
+                    try {
+                        const { data: profile } = await supabase
+                            .from('user_profiles')
+                            .select('full_name')
+                            .eq('id', submission.candidate_id)
+                            .maybeSingle()
+                        if (profile?.full_name) {
+                            candidateName = profile.full_name
+                        }
+                    } catch (e) {
+                        console.warn('Could not fetch user profile for candidate:', submission.candidate_id, e)
+                    }
+                }
+                
+                // Debug logging (only for getAllSubmissions to avoid spam)
+                if (candidateName === 'Candidate' && submission.id) {
+                    console.warn('Candidate name not found for submission:', submission.id, {
+                        hasResumeData: !!submission.resume_data,
+                        resumeDataType: typeof submission.resume_data,
+                        candidateId: submission.candidate_id,
+                        resumeDataKeys: submission.resume_data && typeof submission.resume_data === 'object' ? Object.keys(submission.resume_data) : []
+                    })
+                }
+
                 return {
                     id: submission.id,
                     assessmentId: submission.assessment_id,
@@ -445,8 +505,8 @@ export async function getAllSubmissions(): Promise<CandidateSubmission[]> {
                     jobTitle: submission.jobs?.title || '',
                     company: submission.jobs?.company || '',
                     candidateInfo: {
-                        name: 'Candidate', // Get from user_profiles
-                        email: '', // Get from auth.users
+                        name: candidateName,
+                        email: candidateEmail,
                         userId: submission.candidate_id,
                         startedAt: submission.started_at
                     },
@@ -520,21 +580,47 @@ export async function getSubmissionsByAssessment(assessmentId: string): Promise<
                     .eq('submission_id', submission.id)
                     .single()
 
-                // Get user profile if available
+                // Get candidate name and email
                 let candidateName = 'Candidate'
-                if (submission.candidate_id) {
+                let candidateEmail = ''
+                
+                // First, try to get from stored resume_data
+                // resume_data is a JSONB field, so it could be an object with candidate_name/candidate_email
+                if (submission.resume_data) {
+                    if (typeof submission.resume_data === 'object' && submission.resume_data !== null) {
+                        if (submission.resume_data.candidate_name) {
+                            candidateName = String(submission.resume_data.candidate_name)
+                        }
+                        if (submission.resume_data.candidate_email) {
+                            candidateEmail = String(submission.resume_data.candidate_email)
+                        }
+                    }
+                }
+                
+                // Fallback to user_profiles if not in resume_data
+                if (submission.candidate_id && candidateName === 'Candidate') {
                     try {
                         const { data: profile } = await supabase
                             .from('user_profiles')
                             .select('full_name')
                             .eq('id', submission.candidate_id)
-                            .single()
+                            .maybeSingle()
                         if (profile?.full_name) {
                             candidateName = profile.full_name
                         }
                     } catch (e) {
-                        // Ignore
+                        console.warn('Could not fetch user profile for candidate:', submission.candidate_id, e)
                     }
+                }
+                
+                // Debug logging (only for getAllSubmissions to avoid spam)
+                if (candidateName === 'Candidate' && submission.id) {
+                    console.warn('Candidate name not found for submission:', submission.id, {
+                        hasResumeData: !!submission.resume_data,
+                        resumeDataType: typeof submission.resume_data,
+                        candidateId: submission.candidate_id,
+                        resumeDataKeys: submission.resume_data && typeof submission.resume_data === 'object' ? Object.keys(submission.resume_data) : []
+                    })
                 }
 
                 return {
@@ -545,7 +631,7 @@ export async function getSubmissionsByAssessment(assessmentId: string): Promise<
                     company: submission.jobs?.company || '',
                     candidateInfo: {
                         name: candidateName,
-                        email: '',
+                        email: candidateEmail,
                         userId: submission.candidate_id,
                         startedAt: submission.started_at || new Date().toISOString()
                     },
@@ -619,21 +705,47 @@ export async function getSubmissionsByJob(jobId: string): Promise<CandidateSubmi
                     .eq('submission_id', submission.id)
                     .single()
 
-                // Get user profile if available
+                // Get candidate name and email
                 let candidateName = 'Candidate'
-                if (submission.candidate_id) {
+                let candidateEmail = ''
+                
+                // First, try to get from stored resume_data
+                // resume_data is a JSONB field, so it could be an object with candidate_name/candidate_email
+                if (submission.resume_data) {
+                    if (typeof submission.resume_data === 'object' && submission.resume_data !== null) {
+                        if (submission.resume_data.candidate_name) {
+                            candidateName = String(submission.resume_data.candidate_name)
+                        }
+                        if (submission.resume_data.candidate_email) {
+                            candidateEmail = String(submission.resume_data.candidate_email)
+                        }
+                    }
+                }
+                
+                // Fallback to user_profiles if not in resume_data
+                if (submission.candidate_id && candidateName === 'Candidate') {
                     try {
                         const { data: profile } = await supabase
                             .from('user_profiles')
                             .select('full_name')
                             .eq('id', submission.candidate_id)
-                            .single()
+                            .maybeSingle()
                         if (profile?.full_name) {
                             candidateName = profile.full_name
                         }
                     } catch (e) {
-                        // Ignore
+                        console.warn('Could not fetch user profile for candidate:', submission.candidate_id, e)
                     }
+                }
+                
+                // Debug logging (only for getAllSubmissions to avoid spam)
+                if (candidateName === 'Candidate' && submission.id) {
+                    console.warn('Candidate name not found for submission:', submission.id, {
+                        hasResumeData: !!submission.resume_data,
+                        resumeDataType: typeof submission.resume_data,
+                        candidateId: submission.candidate_id,
+                        resumeDataKeys: submission.resume_data && typeof submission.resume_data === 'object' ? Object.keys(submission.resume_data) : []
+                    })
                 }
 
                 return {
@@ -644,7 +756,7 @@ export async function getSubmissionsByJob(jobId: string): Promise<CandidateSubmi
                     company: submission.jobs?.company || '',
                     candidateInfo: {
                         name: candidateName,
-                        email: '',
+                        email: candidateEmail,
                         userId: submission.candidate_id,
                         startedAt: submission.started_at || new Date().toISOString()
                     },
@@ -731,24 +843,35 @@ export async function getSubmissionById(submissionId: string): Promise<Candidate
             .eq('submission_id', submission.id)
             .single()
 
-        // Get user profile information if candidate_id exists
+        // Get candidate name and email
         let candidateName = 'Candidate'
         let candidateEmail = ''
         
-        if (submission.candidate_id) {
+        // First, try to get from stored resume_data
+        // resume_data is a JSONB field, so it could be an object with candidate_name/candidate_email
+        if (submission.resume_data) {
+            if (typeof submission.resume_data === 'object' && submission.resume_data !== null) {
+                if (submission.resume_data.candidate_name) {
+                    candidateName = String(submission.resume_data.candidate_name)
+                }
+                if (submission.resume_data.candidate_email) {
+                    candidateEmail = String(submission.resume_data.candidate_email)
+                }
+            }
+        }
+        
+        // Fallback to user_profiles if not in resume_data
+        if (submission.candidate_id && candidateName === 'Candidate') {
             try {
                 const { data: profile } = await supabase
                     .from('user_profiles')
                     .select('full_name')
                     .eq('id', submission.candidate_id)
-                    .single()
+                    .maybeSingle()
                 
                 if (profile?.full_name) {
                     candidateName = profile.full_name
                 }
-                
-                // Try to get email from auth.users (this might require service role)
-                // For now, we'll use a placeholder or try to get it from the submission metadata
             } catch (e) {
                 console.warn('Could not fetch user profile:', e)
             }
