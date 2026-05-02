@@ -11,6 +11,9 @@ AssessAI is an intelligent assessment platform that automatically generates role
 
 ---
 
+🏆 **Hackathon Achievement**  
+Secured **3rd Place** in a competitive hackathon for building AssessAI, recognized for innovation in AI-driven hiring and assessment systems.
+ 
 ## 🎯 Overview
 
 AssessAI revolutionizes the hiring process by:
