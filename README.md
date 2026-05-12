@@ -92,8 +92,8 @@ Before you begin, ensure you have:
 ### 1. Clone the Repository
 
 ```bash
-git clone <repository-url>
-cd SkillZen-main
+git clone https://github.com/EvanGregor/NeuralForge.git
+cd NeuralForge
 ```
 
 ### 2. Install Dependencies
